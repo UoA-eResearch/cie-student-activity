@@ -6,6 +6,10 @@
 .RData
 data
 data/*
+docs
+docs/*
+tags
+tags/*
 
 # Example code in package build process
 *-Ex.R
