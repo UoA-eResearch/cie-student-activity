@@ -5,12 +5,16 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
 
 library(ggplot2)
+library(ggthemes)
 library(tidyr)
+library(reshape2)
 library(tidyverse)
+library(readxl)
 library(dplyr)
-library(xlsx)
+library(plotly)
 ```
 
 ## Data cleaning
@@ -18,7 +22,7 @@ library(xlsx)
 ```{r cars}
 path = "data/2017"
 temp <- list.files(path=path)
-data1 <- read.xlsx(paste(path,temp[1], sep="/"), sheetName = "Student", startRow = 2)
+data1 <- read_excel(paste(path,temp[1], sep="/"), sheet = "Student", skip = 1)
 data2 <- read_csv(paste(path,temp[2], sep="/"))
 ```
 
@@ -29,6 +33,7 @@ head(tag)
 ```
 
 ```{r}
+# Participant programme
 partProg <- tag$Tags %>% 
   strsplit(., ",") %>% 
   setNames(tag$`UoA ID`) %>% 
@@ -40,30 +45,80 @@ head(partProg,100)
 ```
 
 ```{r}
+#TODO: Active in Programme?
 partInfo<- data1 %>% 
-  select(`ID`, `Acad.Prog`, `Status`, `Descriptio`, `Acad.Plan`, `Plan.Description`, `Owner.of.Major.Spec.Module`)
+  select(`ID`, `Acad Prog`, `Status`, `Descriptio`, `Acad Plan`, `Plan Description`, `Owner of Major/Spec/Module`)
 
 head(partInfo,100)
 ```
 
-```{r}
+```{r outer-join}
+# Outer join two tables
 df <- merge(x=partProg, y=partInfo, by="ID", all.x = TRUE)
 head(df,100)
 ```
 
 
-```{r}
+```{r filter-non-student}
+# Filter out non-students
 df_stud <- df %>% 
-  filter(!is.na(Acad.Prog))
+  filter(!is.na(`Acad Prog`))
 
 head(df_stud)
 ```
 
-```{r}
-df_stud %>% 
-  ggplot() +
-  geom_bar(aes(`Owner.of.Major.Spec.Module`), stat="count") +
-  coord_flip() +
-  theme_minimal()
+```{r cleaning-year}
+# Only select specific year
+df_stud <- df_stud %>% 
+  mutate(year=substring(`programme`,0,4), programme=substring(`programme`,6)) %>% 
+  filter(year=="2017")
+
+head(df_stud)
 ```
 
+```{r faculty-split-overall}
+df_stud %>% 
+  group_by(`Owner of Major/Spec/Module`) %>% 
+  summarise(count=n()) %>% 
+  ggplot() +
+  geom_bar(aes(x=reorder(`Owner of Major/Spec/Module`, count), count, fill=count), stat="identity") +
+  guides(fill=FALSE) +
+  coord_flip() +
+  ggtitle("Faculty split overall") +
+  theme_hc() + 
+  scale_fill_continuous_tableau()
+```
+
+```{r}
+# Lollipop chart
+df_stud %>% 
+  group_by(`programme`) %>% 
+  summarise(count=n()) %>% 
+  filter(!`programme` %in% c("CIE Participant", "Velocity Participant", "Unleash Space Participant", "Unleash Space Access", "Equipment Training Participant" )) %>% 
+  arrange(count) %>% 
+  mutate(programme = factor(`programme`, levels=.$programme)) %>% 
+  ggplot(aes(count, programme, label=count, fill=count, color=-count)) +
+  geom_segment(aes(x=0, y=programme, xend=count, yend=programme)) +
+  geom_point(size=5) +
+  guides(fill=FALSE, color=FALSE) +
+  ggtitle("Programme split overall") +
+  theme_minimal() + 
+  scale_fill_continuous_tableau()
+  #geom_text(nudge_x=10)
+
+# Bar chart
+df_stud %>% 
+  group_by(`programme`) %>% 
+  summarise(count=n()) %>% 
+  filter(!`programme` %in% c("CIE Participant", "Velocity Participant", "Unleash Space Participant", "Unleash Space Access", "Equipment Training Participant" )) %>% 
+  arrange(count) %>% 
+  mutate(programme = factor(`programme`, levels=.$programme)) %>% 
+  ggplot(aes(programme, count, label=count, fill=count)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  guides(fill=FALSE, color=FALSE) +
+  ggtitle("Programme split overall") +
+  theme_minimal() + 
+  scale_fill_continuous_tableau()
+
+```
