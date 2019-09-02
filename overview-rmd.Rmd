@@ -89,7 +89,7 @@ df_stud %>%
   scale_fill_continuous_tableau()
 ```
 
-```{r}
+```{r programme-split-overall}
 # Lollipop chart
 df_stud %>% 
   group_by(`programme`) %>% 
@@ -121,4 +121,26 @@ df_stud %>%
   theme_minimal() + 
   scale_fill_continuous_tableau()
 
+```
+
+```{r programme-by-faculty}
+# Create dataframe for heatmap
+df_stud %>% 
+  select(`programme`, `Owner of Major/Spec/Module`) %>% 
+  filter(!`programme` %in% c("CIE Participant", "Velocity Participant", "Unleash Space Participant", "Unleash Space Access", "Equipment Training Participant" )) %>%
+  group_by(`programme`,`Owner of Major/Spec/Module`) %>% 
+  summarise(count=n()) %>%
+  complete(`Owner of Major/Spec/Module` = unique(df_stud$`Owner of Major/Spec/Module`)) %>% 
+  ggplot(aes(`Owner of Major/Spec/Module`, `programme`)) + 
+  geom_tile(aes(fill=count), colour="white") +
+  guides(color=FALSE) +
+  ggtitle("Programme split overall") +
+  scale_fill_gradient_tableau(na.value = "white") +
+  scale_x_discrete(position="top") +
+  #scale_fill_gradient(low="white", high = "steelblue", na.value="grey80") +
+  coord_fixed(ratio=.25) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust=0)) +
+  labs(x="", y="")
+  
 ```
