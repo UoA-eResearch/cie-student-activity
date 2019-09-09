@@ -5,6 +5,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_chunk$set(dev = 'pdf')
+knitr::opts_chunk$set(fig.width=30, fig.height=20, out.width = "100%", out.height="1000px", dpi=200)
 rm(list = ls())
 
 library(ggplot2)
@@ -19,7 +21,7 @@ library(plotly)
 
 ## Data cleaning
 
-```{r cars}
+```{r cars, message=FALSE, warning=FALSE}
 path = "data/2017"
 temp <- list.files(path=path)
 data1 <- read_excel(paste(path,temp[1], sep="/"), sheet = "Student", skip = 1)
@@ -29,7 +31,7 @@ data2 <- read_csv(paste(path,temp[2], sep="/"))
 ```{r}
 tag <- data2 %>% 
   select(`ID`, `UoA ID`, `UoA UPI`, `Tags`)
-head(tag)
+head(tag,5)
 ```
 
 ```{r}
@@ -41,21 +43,21 @@ partProg <- tag$Tags %>%
 
 colnames(partProg) <- c("programme", "ID")
 
-head(partProg,100)
+head(partProg,5)
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 #TODO: Active in Programme?
 partInfo<- data1 %>% 
   select(`ID`, `Acad Prog`, `Status`, `Descriptio`, `Acad Plan`, `Plan Description`, `Owner of Major/Spec/Module`)
 
-head(partInfo,100)
+head(partInfo,5)
 ```
 
 ```{r outer-join}
 # Outer join two tables
 df <- merge(x=partProg, y=partInfo, by="ID", all.x = TRUE)
-head(df,100)
+head(df,5)
 ```
 
 
@@ -64,16 +66,16 @@ head(df,100)
 df_stud <- df %>% 
   filter(!is.na(`Acad Prog`))
 
-head(df_stud)
+head(df_stud,10)
 ```
 
-```{r cleaning-year}
+```{r cleaning-year, message=FALSE, warning=FALSE}
 # Only select specific year
 df_stud <- df_stud %>% 
   mutate(year=substring(`programme`,0,4), programme=substring(`programme`,6)) %>% 
   filter(year=="2017")
 
-head(df_stud)
+head(df_stud,5)
 ```
 
 ```{r faculty-split-overall}
@@ -86,10 +88,10 @@ df_stud %>%
   coord_flip() +
   ggtitle("Faculty split overall") +
   theme_hc() + 
-  scale_fill_continuous_tableau()
+  scale_fill_continuous_tableau() + labs(x="")
 ```
 
-```{r programme-split-overall}
+```{r programme-split-overal, fig.fullwidth=TRUE, fig.fullheight=TRUE}
 # Lollipop chart
 df_stud %>% 
   group_by(`programme`) %>% 
@@ -103,7 +105,7 @@ df_stud %>%
   guides(fill=FALSE, color=FALSE) +
   ggtitle("Programme split overall") +
   theme_minimal() + 
-  scale_fill_continuous_tableau()
+  scale_fill_continuous_tableau() + labs(x="", y="")
   #geom_text(nudge_x=10)
 
 # Bar chart
@@ -119,7 +121,7 @@ df_stud %>%
   guides(fill=FALSE, color=FALSE) +
   ggtitle("Programme split overall") +
   theme_minimal() + 
-  scale_fill_continuous_tableau()
+  scale_fill_continuous_tableau() + labs(x="", y="")
 
 ```
 
@@ -132,7 +134,7 @@ df_stud %>%
   summarise(count=n()) %>%
   complete(`Owner of Major/Spec/Module` = unique(df_stud$`Owner of Major/Spec/Module`)) %>% 
   ggplot(aes(`Owner of Major/Spec/Module`, `programme`)) + 
-  geom_tile(aes(fill=count), colour="white") +
+  geom_tile(aes(fill=count), colour="grey97") +
   guides(color=FALSE) +
   ggtitle("Programme split overall") +
   scale_fill_gradient_tableau(na.value = "white") +
