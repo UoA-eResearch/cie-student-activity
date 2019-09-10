@@ -25,7 +25,7 @@ ui <- dashboardPage(
    # Menu
    dashboardSidebar(
      sidebarMenu(
-
+        #style = "position: fixed; width: inherit",
         # Dashboard menu
         menuItem("Overview", tabName = "overview", icon = icon("fas fa-square")),
         menuItem("Programme", tabName = "programme", icon = icon("fas fa-square")),
@@ -37,17 +37,17 @@ ui <- dashboardPage(
         selectInput(
           "baseYear",
           "Base year",
-          choices = unique(overviewData$year),
+          choices = sort(unique(overviewData$year), decreasing = TRUE),
           selected = "2017",
           multiple = FALSE 
           
         ),
-        selectInput(
+        selectizeInput(
           "compareYears",
           "Comparing years",
-          choices = unique(overviewData$year),
+          choices = sort(unique(overviewData$year), decreasing = TRUE),
           multiple = TRUE,
-          selectize = TRUE
+          options = list(placeholder="Select year..", plugins=list("remove_button"))
         )
      )
    ),
@@ -59,28 +59,53 @@ ui <- dashboardPage(
        # Overview
        tabItem(
          tabName = "overview",
-         h2("Overview"),
-
+         h4("Overview"),
+         
          # Info boxes
          fluidRow(
-           infoBoxOutput("totalParticipant"),
-           infoBoxOutput("uniqueParticipant"),
-           infoBoxOutput("repeatParticipant"),
-           infoBoxOutput("onetimeParticipant")
+          infoBoxOutput("totalParticipant",width=3),
+          infoBoxOutput("uniqueParticipant",width=3),
+          infoBoxOutput("repeatParticipant",width=3),
+          infoBoxOutput("onetimeParticipant",width=3)
+         ),
+         
+         # Overview chart
+         fluidRow(
+           column(6,
+                  tabItem(tabName="Overview plot", width=NULL,
+                          plotlyOutput("totalPlot", height = "300px"))
+           ),
+           column(6,
+                  tabItem(tabName="Overview plot", width=NULL,
+                          plotlyOutput("uniquePlot", height = "300px"))
+           )
          ),
 
-         # Faculty split overall
+         # Faculty split by programme
+         h4("Programme split by faculty"),
          fluidRow(
+           column(12,
+                  plotlyOutput("programmeFaculty", height = "600px")
+           )     
+         ),
+         
+         # Faculty split overall
+         h4("Faculty split"),
+         fluidRow(
+            column(12,
+                   plotlyOutput("facultyN", height = "600px")
+            )       
 
          ),
          # Programme split overall
+         h4("Programme split"),
          fluidRow(
-
-         ),
-         # Faculty split by programme
-         fluidRow(
-
+           column(12,
+                  plotlyOutput("programmeN", height = "600px")
+           )       
+           
          )
+
        ),
 
        # Programme

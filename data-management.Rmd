@@ -82,7 +82,8 @@ df <- merge(x=partProg, y=partInfo, by="ID", all.x = TRUE)
 df_stud <- df %>% 
   filter(!is.na(`Acad Prog`)) %>% 
   filter(grepl("^\\d{4}", programme)) %>% 
-  mutate(year=substring(`programme`,0,4), programme=substring(`programme`,6))
+  mutate(year=substring(`programme`,0,4), programme=substring(`programme`,6)) %>% 
+  distinct()
 head(df_stud,10)
 ```
 
