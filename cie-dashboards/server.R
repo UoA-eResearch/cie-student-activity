@@ -28,7 +28,8 @@ server <- function(input, output) {
   })
   overviewPlot_df <- reactive({
     df <- overviewData %>% 
-      select(ID,year) %>% 
+      #filter(year == input$baseYear) %>% 
+      select(ID,year,programme) %>% 
       distinct() # Remove duplicates
     return(df)
   })
@@ -110,8 +111,9 @@ server <- function(input, output) {
   output$uniquePlot <- renderPlotly({
     p <- overviewPlot_df() %>% 
       select(ID,year) %>% 
+      distinct() %>% 
       group_by(year) %>%
-      distinct(ID) %>% 
+      #distinct(ID) %>% 
       summarise(count=n()) %>% 
       ggplot() +
       geom_line(aes(x=year,y=count)) +
@@ -153,6 +155,7 @@ server <- function(input, output) {
   
   # Programme split by faculty
   # Create dataframe for heatmap
+  # TODO: facet by year
   output$programmeFaculty <- renderPlotly({
     p <- heatmap_df() %>% 
       group_by(`programme`,`Owner of Major/Spec/Module`) %>% 
