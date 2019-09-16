@@ -14,44 +14,61 @@ library(dplyr)
 library(plotly)
 
 # Import data
-overviewData <- read_csv("../data/overview.csv")
+allData <- read_csv("../data/overview.csv")
+selection <- read_csv("../data/tags_selection.csv")
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   
   # Reactivate dataframes
+  filterData <- reactive({
+    # Filter programmes based on tab names
+    colNum <- match(input$tab, colnames(selection))
+
+    df1 <- selection %>% 
+      filter(selection[,colNum] == "Y") %>% 
+      select(tag_programme)
+
+    df2 <- allData %>% 
+      filter(programme %in% df1$tag_programme)
+    
+    return(df2)
+  })
+  
   infoOverview_r <- reactive({
     # Apply inputs as filter criteria
-    df <- overviewData %>% 
+    df <- filterData() %>% 
       filter(year == input$baseYear)
     return(df)
   })
+  
+  
   overviewPlot_df <- reactive({
-    df <- overviewData %>% 
+    df <- filterData() %>% 
       #filter(year == input$baseYear) %>% 
       select(ID,year,programme) %>% 
       distinct() # Remove duplicates
     return(df)
   })
   facultyPlot_df <- reactive({
-    df <- overviewData %>%
+    df <- filterData() %>%
       filter(year %in% c(input$baseYear, input$compareYears)) %>% 
       select(ID,year,`Owner of Major/Spec/Module`) %>% 
       distinct() # Remove duplicates
     return(df)
   })
   programmePlot_df <- reactive({
-    df <- overviewData %>%
+    df <- filterData() %>%
       filter(year %in% c(input$baseYear, input$compareYears)) %>% 
-      filter(programme %in% c("CIE Participant", "Velocity Participant", "Unleash Space Participant", "Unleash Space Access", "Equipment Training Participant" )) %>% 
+      #filter(programme %in% c("CIE Participant", "Velocity Participant", "Unleash Space Participant", "Unleash Space Access", "Equipment Training Participant" )) %>% 
       select(ID,year,programme) %>% 
       distinct() # Remove duplicates
     return(df)
   })
   heatmap_df <- reactive({
-    df <- overviewData %>% 
+    df <- filterData() %>% 
       filter(year == input$baseYear) %>% 
-      filter(programme %in% c("CIE Participant", "Velocity Participant", "Unleash Space Participant", "Unleash Space Access", "Equipment Training Participant" )) %>% 
+      #filter(programme %in% c("CIE Participant", "Velocity Participant", "Unleash Space Participant", "Unleash Space Access", "Equipment Training Participant" )) %>% 
       select(ID,`Owner of Major/Spec/Module`, programme) %>% 
       distinct() # Remove duplicates
     return(df)
@@ -79,7 +96,6 @@ server <- function(input, output) {
     {
       repeat_participant <- infoOverview_r() %>% group_by(ID) %>% filter(row_number()==2) %>% distinct(`ID`) %>% nrow()
       unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
-      print(repeat_participant)
       infoBox(
         "Repeat participant", #m vlaue here, icon= icon(), color=
         paste0(repeat_participant, " (", round(repeat_participant*100/unique_particpant,1),"%)")
@@ -168,7 +184,7 @@ server <- function(input, output) {
       scale_fill_gradient_tableau(na.value = "grey") +
       #scale_x_discrete(position="top") +
       #scale_fill_gradient(low="white", high = "steelblue", na.value="grey80") +
-      #coord_fixed(ratio=.5) +
+      coord_fixed(ratio=.5) +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 30, hjust=0), axis.ticks = element_blank()) +
       labs(x="", y="")

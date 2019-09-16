@@ -14,8 +14,8 @@ library(dplyr)
 library(plotly)
 
 # Import data
-overviewData <- read_csv("../data/overview.csv")
-
+allData <- read_csv("../data/overview.csv")
+selection <- read_csv("../data/tags_selection.csv")
 
 ui <- dashboardPage(
 
@@ -26,6 +26,9 @@ ui <- dashboardPage(
    dashboardSidebar(
      sidebarMenu(
         #style = "position: fixed; width: inherit",
+       
+        id = "tab",
+        
         # Dashboard menu
         menuItem("Overview", tabName = "overview", icon = icon("fas fa-square")),
         menuItem("Programme", tabName = "programme", icon = icon("fas fa-square")),
@@ -37,7 +40,7 @@ ui <- dashboardPage(
         selectInput(
           "baseYear",
           "Base year",
-          choices = sort(unique(overviewData$year), decreasing = TRUE),
+          choices = sort(unique(allData$year), decreasing = TRUE),
           selected = "2017",
           multiple = FALSE 
           
@@ -45,7 +48,7 @@ ui <- dashboardPage(
         selectizeInput(
           "compareYears",
           "Comparing years",
-          choices = sort(unique(overviewData$year), decreasing = TRUE),
+          choices = sort(unique(allData$year), decreasing = TRUE),
           multiple = TRUE,
           options = list(placeholder="Select year..", plugins=list("remove_button"))
         )

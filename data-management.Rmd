@@ -88,5 +88,36 @@ head(df_stud,10)
 ```
 
 ```{r export}
-write_csv(df_stud, file.path("data", "overview.csv"))
+#write_csv(df_stud, file.path("data", "overview.csv"))
 ```
+
+```{r tags_selection}
+selection <-  read_excel("data/tags-selection.xlsx", sheet = "2015-2019 Tags")
+
+# Only dashboards tags
+selection <- selection %>%
+  filter(`Dashboards Y / N` == "Y") %>% 
+  filter(grepl("^\\d{4}", `Tag from Capsule Download and in files`)) %>% 
+  mutate(year=substring(`Tag from Capsule Download and in files`,0,4), programme=substring(`Tag from Capsule Download and in files`,6)) %>% 
+  distinct() %>% 
+  glimpse()
+
+
+
+colnames(selection) <- c("tags", "final_tags", "dashboards", "overview", "programme", "velocity", "unleash", "createmaker", "curricula", "journey", "date", "comment", "year", "tag_programme")
+
+write_csv(selection, file.path("data", "tags_selection.csv"))
+```
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
