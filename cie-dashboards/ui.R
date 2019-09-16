@@ -12,6 +12,7 @@ library(tidyverse)
 library(readxl)
 library(dplyr)
 library(plotly)
+library(DT)
 
 # Import data
 allData <- read_csv("../data/overview.csv")
@@ -91,7 +92,6 @@ ui <- dashboardPage(
                   plotlyOutput("programmeFaculty", height = "600px")
            )     
          ),
-         
          # Faculty split overall
          h4("Faculty split"),
          fluidRow(
@@ -105,10 +105,16 @@ ui <- dashboardPage(
          fluidRow(
            column(12,
                   plotlyOutput("programmeN", height = "600px")
-           )       
-           
+           )
+         ),
+         # Table
+         #h4("Data table"),
+         fluidRow(
+           column(12,
+                  dataTableOutput("table")
+            )
          )
-
+         
        ),
 
        # Programme

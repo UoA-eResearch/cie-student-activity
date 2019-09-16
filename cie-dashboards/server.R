@@ -166,7 +166,7 @@ server <- function(input, output) {
       theme_minimal() + 
       #labs(x="", y="", title="Programme split overall") +
       #theme(plot.title = element_text(hjust=0)) +
-      scale_fill_tableau() 
+      scale_fill_tableau() + labs(x="", y="")
   })
   
   # Programme split by faculty
@@ -194,4 +194,6 @@ server <- function(input, output) {
               yaxis = list(showgrid = FALSE, zeroline=FALSE)
         )
   })
+  
+  output$table <- renderDataTable(filterData())
 }
