@@ -24,14 +24,11 @@ server <- function(input, output) {
   filterData <- reactive({
     # Filter programmes based on tab names
     colNum <- match(input$tab, colnames(selection))
-
     df1 <- selection %>% 
       filter(selection[,colNum] == "Y") %>% 
       select(tag_programme)
-
     df2 <- allData %>% 
       filter(programme %in% df1$tag_programme)
-    
     return(df2)
   })
   
@@ -41,11 +38,8 @@ server <- function(input, output) {
       filter(year == input$baseYear)
     return(df)
   })
-  
-  
   overviewPlot_df <- reactive({
     df <- filterData() %>% 
-      #filter(year == input$baseYear) %>% 
       select(ID,year,programme) %>% 
       distinct() # Remove duplicates
     return(df)
@@ -60,16 +54,14 @@ server <- function(input, output) {
   programmePlot_df <- reactive({
     df <- filterData() %>%
       filter(year %in% c(input$baseYear, input$compareYears)) %>% 
-      #filter(programme %in% c("CIE Participant", "Velocity Participant", "Unleash Space Participant", "Unleash Space Access", "Equipment Training Participant" )) %>% 
       select(ID,year,programme) %>% 
       distinct() # Remove duplicates
     return(df)
   })
   heatmap_df <- reactive({
     df <- filterData() %>% 
-      filter(year == input$baseYear) %>% 
-      #filter(programme %in% c("CIE Participant", "Velocity Participant", "Unleash Space Participant", "Unleash Space Access", "Equipment Training Participant" )) %>% 
-      select(ID,`Owner of Major/Spec/Module`, programme) %>% 
+      filter(year %in% c(input$baseYear, input$compareYears)) %>%
+      select(ID,`Owner of Major/Spec/Module`, programme, year) %>% 
       distinct() # Remove duplicates
     return(df)
   })
@@ -174,23 +166,26 @@ server <- function(input, output) {
   # TODO: facet by year
   output$programmeFaculty <- renderPlotly({
     p <- heatmap_df() %>% 
-      group_by(`programme`,`Owner of Major/Spec/Module`) %>% 
+      group_by(`programme`,`Owner of Major/Spec/Module`, year) %>% 
       summarise(count=n()) %>%
-      complete(`Owner of Major/Spec/Module` = unique(df_stud$`Owner of Major/Spec/Module`)) %>% 
-      ggplot(aes(`Owner of Major/Spec/Module`,`programme`)) + 
-      geom_tile(aes(fill=count)) +
-      guides(color=FALSE) +
-      #ggtitle("Programme split by faulcuty") +
+      complete(`programme` =unique(programme),`Owner of Major/Spec/Module` = unique(filterData()$`Owner of Major/Spec/Module`), year=unique(heatmap_df()$year)) %>% 
+      distinct() %>% 
+      ggplot(aes(`Owner of Major/Spec/Module`,`programme`)) +
+      geom_raster(aes(fill=count)) +
+      facet_wrap(year~.) +
+      guides(color=FALSE, fill=FALSE) +
       scale_fill_gradient_tableau(na.value = "grey") +
-      #scale_x_discrete(position="top") +
-      #scale_fill_gradient(low="white", high = "steelblue", na.value="grey80") +
-      coord_fixed(ratio=.5) +
+      coord_equal() +
       theme_minimal() +
-      theme(axis.text.x = element_text(angle = 30, hjust=0), axis.ticks = element_blank()) +
+      theme(
+        axis.text.x = element_text(angle = -30, hjust=0),
+        panel.grid.major = element_blank(),
+        panel.background = element_rect(fill="grey97")
+        ) +
       labs(x="", y="")
-    ggplotly(p) %>% 
+    ggplotly(p) %>%
       layout(
-              xaxis = list(showgrid = FALSE, side="top", scaleanchor="y", constrain="domain", zeroline=FALSE),
+              xaxis = list(showgrid = FALSE, scaleanchor="y", constrain="domain", zeroline=FALSE),
               yaxis = list(showgrid = FALSE, zeroline=FALSE)
         )
   })

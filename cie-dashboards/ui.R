@@ -89,7 +89,7 @@ ui <- dashboardPage(
          h4("Programme split by faculty"),
          fluidRow(
            column(12,
-                  plotlyOutput("programmeFaculty", height = "600px")
+                  plotlyOutput("programmeFaculty", height="800px")
            )     
          ),
          # Faculty split overall
