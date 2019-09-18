@@ -50,27 +50,30 @@ server <- function(input, output) {
   facultyPlot_df <- reactive({
     df <- filterData() %>%
       filter(year %in% c(input$baseYear, input$compareYears)) %>% 
-      select(ID,year,`Owner of Major/Spec/Module`) %>% 
-      distinct() # Remove duplicates
+      distinct(ID,year,programme, `Owner of Major/Spec/Module`) # Remove people who are conjoints
     return(df)
   })
   programmePlot_df <- reactive({
     df <- filterData() %>%
       filter(year %in% c(input$baseYear, input$compareYears)) %>% 
-      select(ID,year,programme) %>% 
-      distinct() # Remove duplicates
+      distinct(ID,year,programme) %>%  # Remove people who are conjoints
+      group_by(`year`, `programme`) %>% 
+      summarise(count=n())
     return(df)
   })
   heatmap_df <- reactive({
     df <- filterData() %>% 
       filter(year %in% c(input$baseYear, input$compareYears)) %>%
-      select(ID,`Owner of Major/Spec/Module`, programme, year) %>% 
-      distinct() # Remove duplicates
+      distinct(ID,year,programme, `Owner of Major/Spec/Module`) # Remove people who are conjoints
     return(df)
   })
   debug_df <- reactive({
-    repeat_participant <- infoOverview_r() %>% distinct(ID,programme,year) %>% group_by(ID) %>% mutate(row_count = row_number())#filter(row_number()==2) %>% distinct(`ID`) %>% nrow()
-    return(repeat_participant)
+    df <- filterData() %>%
+      filter(year %in% c(input$baseYear, input$compareYears)) %>% 
+      distinct(ID,year,programme)  # Remove people who are conjoints
+      #group_by(`year`, `programme`) %>% 
+      #summarise(count=n())
+    return(df)
   })
   
   # Info boxes
@@ -160,8 +163,6 @@ server <- function(input, output) {
   # Programme
   output$programmeN <- renderPlotly({
     programmePlot_df() %>% 
-      group_by(`year`, `programme`) %>% 
-      summarise(count=n()) %>% 
       ggplot() +
       geom_bar(aes(x=reorder(`programme`, count), count, fill=factor(year)), stat="identity", position = "dodge") +
       guides(fill=FALSE) +
