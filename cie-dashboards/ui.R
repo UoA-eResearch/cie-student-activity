@@ -41,7 +41,7 @@ ui <- dashboardPage(
         selectInput(
           "baseYear",
           "Base year",
-          choices = sort(unique(allData$year), decreasing = TRUE),
+          choices = sort(unique(selection$year), decreasing = TRUE),
           selected = "2017",
           multiple = FALSE 
           
@@ -49,7 +49,7 @@ ui <- dashboardPage(
         selectizeInput(
           "compareYears",
           "Comparing years",
-          choices = sort(unique(allData$year), decreasing = TRUE),
+          choices = sort(unique(selection$year), decreasing = TRUE),
           multiple = TRUE,
           options = list(placeholder="Select year..", plugins=list("remove_button"))
         )

@@ -26,6 +26,7 @@ server <- function(input, output) {
     colNum <- match(input$tab, colnames(selection))
     df1 <- selection %>% 
       filter(selection[,colNum] == "Y") %>% 
+      #filter(year %in% c(input$baseYear, input$compareYears)) %>% 
       select(tag_programme)
     df2 <- allData %>% 
       filter(programme %in% df1$tag_programme)
@@ -35,13 +36,15 @@ server <- function(input, output) {
   infoOverview_r <- reactive({
     # Apply inputs as filter criteria
     df <- filterData() %>% 
+      distinct(ID, year, programme) %>%  # Remove people who are conjoints
+      filter(!programme %in% c("CIE Participant")) %>% 
       filter(year == input$baseYear)
     return(df)
   })
   overviewPlot_df <- reactive({
     df <- filterData() %>% 
-      select(ID,year,programme) %>% 
-      distinct() # Remove duplicates
+      distinct(ID,year,programme) %>% # Remove people who are conjoints
+      filter(!programme %in% c("CIE Participant"))
     return(df)
   })
   facultyPlot_df <- reactive({
@@ -65,12 +68,15 @@ server <- function(input, output) {
       distinct() # Remove duplicates
     return(df)
   })
-  
+  debug_df <- reactive({
+    repeat_participant <- infoOverview_r() %>% distinct(ID,programme,year) %>% group_by(ID) %>% mutate(row_count = row_number())#filter(row_number()==2) %>% distinct(`ID`) %>% nrow()
+    return(repeat_participant)
+  })
   
   # Info boxes
   output$totalParticipant <- renderInfoBox(
     {
-      total_participant <- nrow(infoOverview_r())
+      total_participant <- nrow(infoOverview_r() %>% filter(!programme %in% c("CIE Participant")))
       infoBox(
         "Total participant", #m vlaue here, icon= icon(), color=
         total_participant
@@ -86,7 +92,12 @@ server <- function(input, output) {
     })
   output$repeatParticipant <- renderInfoBox(
     {
-      repeat_participant <- infoOverview_r() %>% group_by(ID) %>% filter(row_number()==2) %>% distinct(`ID`) %>% nrow()
+      repeat_participant <- infoOverview_r() %>% 
+        distinct(ID,programme,year) %>% # Avoid conjoint students appear twice
+        group_by(ID) %>% 
+        filter(row_number()==2) %>%
+        distinct(`ID`) %>%
+        nrow()
       unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
       infoBox(
         "Repeat participant", #m vlaue here, icon= icon(), color=
@@ -95,17 +106,18 @@ server <- function(input, output) {
     })
   output$onetimeParticipant <- renderInfoBox(
     {
-      onetime_participant <- infoOverview_r() %>% group_by(ID) %>% summarise(count=n()) %>% filter(count < 2) %>% distinct(`ID`) %>% nrow()
+      onetime_participant <- infoOverview_r() %>% group_by(ID) %>% distinct(ID,programme,year) %>% summarise(count=n()) %>% filter(count < 2) %>% distinct(`ID`) %>% nrow()
+      unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
       infoBox(
         "One-time participant", #m vlaue here, icon= icon(), color=
-        onetime_participant
+        paste0(onetime_participant, " (", round(onetime_participant*100/unique_particpant,1),"%)")
       )
     })
   
   # Overview plot
   output$totalPlot <- renderPlotly({
     p <- overviewPlot_df() %>% 
-      select(ID,year) %>% 
+      select(ID,year) %>%
       group_by(year) %>% 
       summarise(count=n()) %>% 
       ggplot() +
@@ -190,5 +202,5 @@ server <- function(input, output) {
         )
   })
   
-  output$table <- renderDataTable(filterData())
+  output$table <- renderDataTable(debug_df())
 }

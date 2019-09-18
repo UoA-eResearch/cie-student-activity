@@ -125,9 +125,3 @@ write_csv(selection, file.path("data", "tags_selection.csv"))
 
 ```
 
-
-```{r}
-
-
-```
-
