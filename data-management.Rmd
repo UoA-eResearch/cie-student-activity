@@ -18,14 +18,22 @@ library(reshape2)
 
 ```{r read1}
 # Gather file paths
-years <- list.files("data", pattern = "\\d*")
-files <- dir(file.path("data", years), pattern="*ned.xlsx", full.names = TRUE)
-
+years <- list.files("data", pattern = "\\d+")
+files <- dir(file.path("data", years), pattern="From.*xlsx", full.names = TRUE)
 # Read data
-student <- files %>% 
-  map(~read_excel(file.path(.), sheet="Student", skip=1)) %>% 
-  reduce(rbind)
+# student <- files %>% 
+#   map(~read_excel(file.path(.), sheet="Student", skip=1)) %>% 
+#   reduce(rbind)
+student <- data_frame(updated = years, filename = files) %>% 
+  mutate(file_contents = map(filename, ~read_excel(file.path(.), sheet="Student", skip=1))) %>% 
+  unnest() %>% 
+  select(-filename)
+if (length(colnames(student)) != 23) {
+  print("Reading student data error")
+  quit()
+}
 ```
+
 
 ```{r read2 warning=FALSE}
 # Gather file paths
@@ -69,8 +77,10 @@ colnames(partProg) <- c("programme", "ID")
 
 ```{r partInfo message=FALSE, warning=FALSE}
 #TODO: Active in Programme?
-partInfo <- student %>% 
-  select(`ID`, `Acad Prog`, `Status`, `Descriptio`, `Acad Plan`, `Plan Description`, `Owner of Major/Spec/Module`)
+# partInfo <- student %>% 
+#   #select(`ID`, `Acad Prog`, `Status`, `Descriptio`, `Acad Plan`, `Plan Description`, `Owner of Major/Spec/Module`)
+
+partInfo <- student
 
 head(partInfo,5)
 ```
@@ -88,7 +98,7 @@ head(df_stud,10)
 ```
 
 ```{r export}
-#write_csv(df_stud, file.path("data", "overview.csv"))
+write_csv(df_stud, file.path("data", "all.csv"))
 ```
 
 ```{r tags_selection}
