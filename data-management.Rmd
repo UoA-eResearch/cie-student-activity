@@ -14,12 +14,13 @@ library(readxl)
 library(dplyr)
 library(tidyr)
 library(reshape2)
+
 ```
 
 ```{r read1}
-data_dir <- "../data"
+data_dir <- "data"
 # Gather file paths
-years <- list.files("../data", pattern = "\\d+")
+years <- list.files("data", pattern = "\\d+")
 files <- dir(file.path(data_dir, years), pattern="From.*xlsx", full.names = TRUE)
 # Read data
 # student <- files %>% 
@@ -67,6 +68,7 @@ studentEvent <- eventCsv %>%
   group_by(`UoA ID`) %>% 
   mutate(events=str_length(Tags)) %>% # Count number of events
   filter(events==max(events)) # Latest rows would have higher number of events
+
 # Participant programme
 partProg <-studentEvent$Tags %>% 
   strsplit(., ",") %>% 
@@ -74,22 +76,69 @@ partProg <-studentEvent$Tags %>%
   melt(value.name = "programme")
 
 colnames(partProg) <- c("programme", "ID")
+
+head(partProg,10)
 ```
 
 ```{r partInfo message=FALSE, warning=FALSE}
 #TODO: Active in Programme?
 # partInfo <- student %>% 
 #   #select(`ID`, `Acad Prog`, `Status`, `Descriptio`, `Acad Plan`, `Plan Description`, `Owner of Major/Spec/Module`)
-
 partInfo <- student
-
 head(partInfo,5)
 ```
 
+```{r tags_selection}
+# ## Export to tags_selection.csv
+# selection <-  read_excel("data/tags-selection.xlsx", sheet = "2015-2019 Tags")
+# 
+# # Only dashboards tags
+# selection <- selection %>%
+#   filter(`Dashboards Y / N` == "Y") %>% 
+#   filter(grepl("^\\d{4}", `Tag from Capsule Download and in files`)) %>% 
+#   mutate(year=substring(`Tag from Capsule Download and in files`,0,4), programme=substring(`Tag from Capsule Download and in files`,6)) %>% 
+#   distinct() %>% 
+#   glimpse()
+# 
+# 
+# 
+# colnames(selection) <- c("tags", "final_tags", "dashboards", "overview", "programme", "velocity", "unleash", "createmaker", "curricula", "journey", "date", "comment", "year", "tag_programme")
+# 
+# write_csv(selection, file.path("data", "tags_selection.csv"))
+```
+
+```{r replace-tags}
+# Replace programme with valid programme from tags-selection.xlsx
+selection <- read_csv(file.path(data_dir,"tags_selection.csv"))
+
+# Only rows that need to be in the dashboard
+selection <- selection %>% 
+  filter(selection$dashboards == "Y")
+# Only participant and programmes that need to be in the dashboard
+selected_partProg <- partProg %>% 
+  filter(programme %in% selection$tags)
+
+# Split into two sub-datasets to find which rows need to be replaced
+change_tags <- selection %>% 
+  filter(tags != final_tags)
+constant_tags <- selected_partProg %>% 
+  filter(!programme %in% change_tags$tags)
+need2change_tags <- selected_partProg %>% 
+  filter(programme %in% change_tags$tags)
+
+# Replace the invalid tags
+new <- need2change_tags # create a copy of need2change
+new$programme <- lapply(need2change_tags$programme, function(x) change_tags$final_tags[match(x, change_tags$tags)])
+
+# Combine the two sub-datasets
+selected_partProg <- rbind(constant_tags,new)
+```
+
 ```{r merge outer-join}
-# Outer join two tables
-df <- merge(x=partProg, y=partInfo, by="ID", all.x = TRUE)
-# Filter out non-students, overarching programmes, and add year
+## Outer join two tables
+df <- merge(x=selected_partProg, y=partInfo, by="ID", all.x = TRUE)
+
+## Filter out non-students, overarching programmes, and add year
 df_stud <- df %>% 
   filter(!is.na(`Acad Prog`)) %>% 
   filter(grepl("^\\d{4}", programme)) %>% 
@@ -100,29 +149,5 @@ head(df_stud,10)
 
 ```{r export}
 write_csv(df_stud, file.path("data", "all.csv"))
-```
-
-```{r tags_selection}
-selection <-  read_excel("data/tags-selection.xlsx", sheet = "2015-2019 Tags")
-
-# Only dashboards tags
-selection <- selection %>%
-  filter(`Dashboards Y / N` == "Y") %>% 
-  filter(grepl("^\\d{4}", `Tag from Capsule Download and in files`)) %>% 
-  mutate(year=substring(`Tag from Capsule Download and in files`,0,4), programme=substring(`Tag from Capsule Download and in files`,6)) %>% 
-  distinct() %>% 
-  glimpse()
-
-
-
-colnames(selection) <- c("tags", "final_tags", "dashboards", "overview", "programme", "velocity", "unleash", "createmaker", "curricula", "journey", "date", "comment", "year", "tag_programme")
-
-write_csv(selection, file.path("data", "tags_selection.csv"))
-```
-
-
-```{r}
-
-
 ```
 
