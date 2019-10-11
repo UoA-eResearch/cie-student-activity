@@ -13,11 +13,19 @@ library(readxl)
 library(dplyr)
 library(plotly)
 library(DT)
+library(shinyWidgets)
 
 # Import data
+# Fixed data preprocessing
 allData <- read_csv("../data/all.csv")
 selection <- read_csv("../data/tags_selection.csv")
+availProg <- selection %>% 
+  filter(selection[,5] == "Y") %>% 
+  select(tag_programme)
+availProg <- allData %>% 
+  filter(programme %in% availProg$tag_programme)
 
+# UI
 ui <- dashboardPage(
 
    # Application title
@@ -38,33 +46,21 @@ ui <- dashboardPage(
         menuItem("Create and Maker Space", tabName = "createmaker", icon = icon("fas fa-square")),
 
         # Sidebar Inputs
-        selectInput(
+        pickerInput(
           "baseYear",
-          "Base year",
+          "Year",
           choices = sort(unique(selection$year), decreasing = TRUE),
           selected = "2017",
-          multiple = FALSE 
+          options = list(`actions-box` = TRUE, placeholder="Select year..."),
+          multiple = T
         ),
-        selectizeInput(
-          "compareYears",
-          "Comparing years",
-          choices = sort(unique(selection$year), decreasing = TRUE),
-          multiple = TRUE,
-          options = list(placeholder="Select year..", plugins=list("remove_button"))
-        ),
-        selectInput(
+        pickerInput(
           "baseProgramme",
-          "Base programme",
+          "Programme",
           selected="CIE Participant",
-          choices = c("CIE Participant"),
-          multiple = FALSE 
-        ),
-        checkboxGroupInput(
-          "compareProgramme",
-          "Comparing programmes",
-          choices = c("CIE Participant")
-          #multiple = TRUE,
-          #options = list(placeholder="Select programmes..", plugins=list("remove_button"))
+          choices = sort(unique(availProg$programme)),
+          options = list(`actions-box` = TRUE, placeholder="Select programme..."),
+          multiple = T
         )
      )
    ),
@@ -133,9 +129,27 @@ ui <- dashboardPage(
        # Programme
        tabItem(
          tabName = "programme",
-         h2("Programme")
-
-         #
+         h2("Programme"),
+         
+         # Info boxes
+         fluidRow(
+           infoBoxOutput("programmeTotalParticipant",width=3),
+           infoBoxOutput("programmeUniqueParticipant",width=3),
+           infoBoxOutput("programmeRepeatParticipant",width=3),
+           infoBoxOutput("programmeOnetimeParticipant",width=3)
+         ),
+         
+         # Overview chart
+         fluidRow(
+           column(6,
+                  tabItem(tabName="Overview plot", width=NULL,
+                          plotlyOutput("programmeTotalPlot", height = "300px"))
+           ),
+           column(6,
+                  tabItem(tabName="Overview plot", width=NULL,
+                          plotlyOutput("programmeUniquePlot", height = "300px"))
+           )
+         )
        ),
 
        # Velocity

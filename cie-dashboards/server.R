@@ -12,6 +12,7 @@ library(tidyverse)
 library(readxl)
 library(dplyr)
 library(plotly)
+library(shinyWidgets)
 
 # Import data
 allData <- read_csv("../data/overview.csv")
@@ -26,7 +27,6 @@ server <- function(input, output, session) {
     colNum <- match(input$tab, colnames(selection))
     df1 <- selection %>% 
       filter(selection[,colNum] == "Y") %>% 
-      #filter(year %in% c(input$baseYear, input$compareYears)) %>% 
       select(tag_programme)
     df2 <- allData %>% 
       filter(programme %in% df1$tag_programme)
@@ -38,7 +38,14 @@ server <- function(input, output, session) {
     df <- filterData() %>% 
       distinct(ID, year, programme) %>%  # Remove people who are conjoints
       filter(!programme %in% c("CIE Participant")) %>% 
-      filter(year == input$baseYear)
+      filter(year %in% input$baseYear)
+
+    if (input$tab == "programme") {
+      df <- filterData() %>% 
+        distinct(ID, year, programme) %>%  # Remove people who are conjoints
+        filter(programme %in% input$baseProgramme) %>% 
+        filter(year %in% input$baseYear)
+    }
     return(df)
   })
   overviewPlot_df <- reactive({
@@ -49,39 +56,37 @@ server <- function(input, output, session) {
   })
   facultyPlot_df <- reactive({
     df <- filterData() %>%
-      filter(year %in% c(input$baseYear, input$compareYears)) %>% 
+      filter(year %in% input$baseYear) %>% 
       distinct(ID,year,programme, `Owner of Major/Spec/Module`) # Remove people who are conjoints
     return(df)
   })
   programmePlot_df <- reactive({
     df <- filterData() %>%
-      filter(year %in% c(input$baseYear, input$compareYears)) %>% 
+      filter(year %in% input$baseYear) %>% 
       distinct(ID,year,programme) %>%  # Remove people who are conjoints
       group_by(`year`, `programme`) %>% 
       summarise(count=n())
     return(df)
   })
   # Update the filers based on selected year
-  observe({
-    updateSelectInput(session, "baseProgramme", choices = sort(unique(facultyPlot_df()$programme)), selected = "CIE Participant")
-    updateCheckboxGroupInput(session, "compareProgramme", choices = sort(unique(facultyPlot_df()$programme)))
-  })
+  # observe({
+  #   updatePickerInput(session, "baseProgramme", choices = sort(unique(facultyPlot_df()$programme)))
+  # })
   heatmap_df <- reactive({
     df <- filterData() %>% 
-      filter(year %in% c(input$baseYear, input$compareYears)) %>%
+      filter(year %in% c(input$baseYear)) %>%
       distinct(ID,year,programme, `Owner of Major/Spec/Module`) # Remove people who are conjoints
     return(df)
   })
   debug_df <- reactive({
     df <- filterData() %>%
-      filter(year %in% c(input$baseYear, input$compareYears)) %>% 
+      filter(year %in% c(input$baseYear)) %>% 
       distinct(ID,year,programme)  # Remove people who are conjoints
-      #group_by(`year`, `programme`) %>% 
-      #summarise(count=n())
     return(df)
   })
   
   # Info boxes
+  ## Overview
   output$totalParticipant <- renderInfoBox(
     {
       total_participant <- nrow(infoOverview_r() %>% filter(!programme %in% c("CIE Participant")))
@@ -113,6 +118,46 @@ server <- function(input, output, session) {
       )
     })
   output$onetimeParticipant <- renderInfoBox(
+    {
+      onetime_participant <- infoOverview_r() %>% group_by(ID) %>% distinct(ID,programme,year) %>% summarise(count=n()) %>% filter(count < 2) %>% distinct(`ID`) %>% nrow()
+      unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
+      infoBox(
+        "One-time participant", #m vlaue here, icon= icon(), color=
+        paste0(onetime_participant, " (", round(onetime_participant*100/unique_particpant,1),"%)")
+      )
+    })
+  ## Programme
+  output$programmeTotalParticipant <- renderInfoBox(
+    {
+      total_participant <- nrow(infoOverview_r())
+      infoBox(
+        "Total participant", #m vlaue here, icon= icon(), color=
+        total_participant
+      )
+    })
+  output$programmeUniqueParticipant <- renderInfoBox(
+    {
+      unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
+      infoBox(
+        "Unique participant", #m vlaue here, icon= icon(), color=
+        unique_particpant
+      )
+    })
+  output$programmeRepeatParticipant <- renderInfoBox(
+    {
+      repeat_participant <- infoOverview_r() %>% 
+        distinct(ID,programme,year) %>% # Avoid conjoint students appear twice
+        group_by(ID) %>% 
+        filter(row_number()==2) %>%
+        distinct(`ID`) %>%
+        nrow()
+      unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
+      infoBox(
+        "Repeat participant", #m vlaue here, icon= icon(), color=
+        paste0(repeat_participant, " (", round(repeat_participant*100/unique_particpant,1),"%)")
+      )
+    })
+  output$programmeOnetimeParticipant <- renderInfoBox(
     {
       onetime_participant <- infoOverview_r() %>% group_by(ID) %>% distinct(ID,programme,year) %>% summarise(count=n()) %>% filter(count < 2) %>% distinct(`ID`) %>% nrow()
       unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
