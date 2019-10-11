@@ -15,7 +15,7 @@ library(plotly)
 library(DT)
 
 # Import data
-allData <- read_csv("../data/overview.csv")
+allData <- read_csv("../data/all.csv")
 selection <- read_csv("../data/tags_selection.csv")
 
 ui <- dashboardPage(

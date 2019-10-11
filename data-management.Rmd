@@ -58,6 +58,7 @@ eventCsv <- files %>%
   reduce(rbind) %>% 
   select(`UoA ID`, `Tags`)
 
+#colnames(eventCsv) <- c("UoA ID", "Tags")
 head(eventCsv, 10)
 ```
 
@@ -70,7 +71,7 @@ studentEvent <- eventCsv %>%
   filter(events==max(events)) # Latest rows would have higher number of events
 
 # Participant programme
-partProg <-studentEvent$Tags %>% 
+partProg <- studentEvent$Tags %>% 
   strsplit(., ",") %>% 
   setNames(studentEvent$`UoA ID`) %>% 
   melt(value.name = "programme")
