@@ -18,7 +18,7 @@ allData <- read_csv("../data/overview.csv")
 selection <- read_csv("../data/tags_selection.csv")
 
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   # Reactivate dataframes
   filterData <- reactive({
@@ -60,6 +60,11 @@ server <- function(input, output) {
       group_by(`year`, `programme`) %>% 
       summarise(count=n())
     return(df)
+  })
+  # Update the filers based on selected year
+  observe({
+    updateSelectInput(session, "baseProgramme", choices = sort(unique(facultyPlot_df()$programme)), selected = "CIE Participant")
+    updateCheckboxGroupInput(session, "compareProgramme", choices = sort(unique(facultyPlot_df()$programme)))
   })
   heatmap_df <- reactive({
     df <- filterData() %>% 

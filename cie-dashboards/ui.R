@@ -44,7 +44,6 @@ ui <- dashboardPage(
           choices = sort(unique(selection$year), decreasing = TRUE),
           selected = "2017",
           multiple = FALSE 
-          
         ),
         selectizeInput(
           "compareYears",
@@ -52,6 +51,20 @@ ui <- dashboardPage(
           choices = sort(unique(selection$year), decreasing = TRUE),
           multiple = TRUE,
           options = list(placeholder="Select year..", plugins=list("remove_button"))
+        ),
+        selectInput(
+          "baseProgramme",
+          "Base programme",
+          selected="CIE Participant",
+          choices = c("CIE Participant"),
+          multiple = FALSE 
+        ),
+        checkboxGroupInput(
+          "compareProgramme",
+          "Comparing programmes",
+          choices = c("CIE Participant")
+          #multiple = TRUE,
+          #options = list(placeholder="Select programmes..", plugins=list("remove_button"))
         )
      )
    ),
