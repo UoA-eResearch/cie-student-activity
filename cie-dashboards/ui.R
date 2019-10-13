@@ -16,16 +16,14 @@ library(DT)
 library(shinyWidgets)
 
 # Import data
-# Fixed data preprocessing
-allData <- read_csv("../data/all.csv")
-selection <- read_csv("../data/tags_selection.csv")
+allData <- read_csv("data/all.csv")
+selection <- read_csv("data/tags_selection.csv")
 availProg <- selection %>% 
-  filter(selection[,5] == "Y") %>% 
-  select(tag_programme)
+        filter(selection[,5] == "Y") %>% 
+        select(tag_programme)
 availProg <- allData %>% 
-  filter(programme %in% availProg$tag_programme)
+        filter(programme %in% availProg$tag_programme)
 
-# UI
 ui <- dashboardPage(
 
    # Application title
@@ -47,20 +45,20 @@ ui <- dashboardPage(
 
         # Sidebar Inputs
         pickerInput(
-          "baseYear",
-          "Year",
-          choices = sort(unique(selection$year), decreasing = TRUE),
-          selected = "2017",
-          options = list(`actions-box` = TRUE, placeholder="Select year..."),
-          multiple = T
+                "baseYear",
+                "Year",
+                choices = sort(unique(selection$year), decreasing = TRUE),
+                selected = "2017",
+                options = list(`actions-box` = TRUE, placeholder="Select year..."),
+                multiple = T
         ),
         pickerInput(
-          "baseProgramme",
-          "Programme",
-          selected="CIE Participant",
-          choices = sort(unique(availProg$programme)),
-          options = list(`actions-box` = TRUE, placeholder="Select programme..."),
-          multiple = T
+                "baseProgramme",
+                "Programme",
+                selected="CIE Participant",
+                choices = sort(unique(availProg$programme)),
+                options = list(`actions-box` = TRUE, placeholder="Select programme..."),
+                multiple = T
         )
      )
    ),
@@ -128,28 +126,28 @@ ui <- dashboardPage(
 
        # Programme
        tabItem(
-         tabName = "programme",
-         h2("Programme"),
-         
-         # Info boxes
-         fluidRow(
-           infoBoxOutput("programmeTotalParticipant",width=3),
-           infoBoxOutput("programmeUniqueParticipant",width=3),
-           infoBoxOutput("programmeRepeatParticipant",width=3),
-           infoBoxOutput("programmeOnetimeParticipant",width=3)
-         ),
-         
-         # Overview chart
-         fluidRow(
-           column(6,
-                  tabItem(tabName="Overview plot", width=NULL,
-                          plotlyOutput("programmeTotalPlot", height = "300px"))
-           ),
-           column(6,
-                  tabItem(tabName="Overview plot", width=NULL,
-                          plotlyOutput("programmeUniquePlot", height = "300px"))
-           )
-         )
+               tabName = "programme",
+               h2("Programme"),
+               
+               # # Info boxes
+               # fluidRow(
+               #         infoBoxOutput("programmeTotalParticipant",width=3),
+               #         infoBoxOutput("programmeUniqueParticipant",width=3),
+               #         infoBoxOutput("programmeRepeatParticipant",width=3),
+               #         infoBoxOutput("programmeOnetimeParticipant",width=3)
+               # ),
+               
+               # Overview chart
+               fluidRow(
+                       column(6,
+                              tabItem(tabName="Overview plot", width=NULL,
+                                      plotlyOutput("programmeUniquePlot", height = "300px"))
+                       ),
+                       column(6,
+                              tabItem(tabName="Overview plot", width=NULL,
+                                      plotlyOutput("programmeRepeatPlot", height = "300px"))
+                       )
+               )
        ),
 
        # Velocity

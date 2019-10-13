@@ -15,8 +15,8 @@ library(plotly)
 library(shinyWidgets)
 
 # Import data
-allData <- read_csv("../data/overview.csv")
-selection <- read_csv("../data/tags_selection.csv")
+allData <- read_csv("data/overview.csv")
+selection <- read_csv("data/tags_selection.csv")
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
@@ -39,7 +39,7 @@ server <- function(input, output, session) {
       distinct(ID, year, programme) %>%  # Remove people who are conjoints
       filter(!programme %in% c("CIE Participant")) %>% 
       filter(year %in% input$baseYear)
-
+    
     if (input$tab == "programme") {
       df <- filterData() %>% 
         distinct(ID, year, programme) %>%  # Remove people who are conjoints
@@ -52,6 +52,12 @@ server <- function(input, output, session) {
     df <- filterData() %>% 
       distinct(ID,year,programme) %>% # Remove people who are conjoints
       filter(!programme %in% c("CIE Participant"))
+    
+    if (input$tab == "programme") {
+      df <- filterData() %>% 
+        distinct(ID,year,programme) %>% # Remove people who are conjoints
+        filter(programme %in% input$baseProgramme)
+    }
     return(df)
   })
   facultyPlot_df <- reactive({
@@ -86,7 +92,6 @@ server <- function(input, output, session) {
   })
   
   # Info boxes
-  ## Overview
   output$totalParticipant <- renderInfoBox(
     {
       total_participant <- nrow(infoOverview_r() %>% filter(!programme %in% c("CIE Participant")))
@@ -193,6 +198,48 @@ server <- function(input, output, session) {
       ggtitle("Unique participants by year") +
       theme_minimal() + guides(fill=FALSE, color=FALSE) + labs(y="", x = "") + scale_color_continuous_tableau() 
     #+ annotate("segment", xmin=(input$baseYear - 0.5), xmax = (input$baseYear + 0.5), alpha= .2)
+    ggplotly(p)
+  })
+  
+  output$programmeUniquePlot <- renderPlotly({
+    p <- overviewPlot_df() %>% 
+      #filter(year %in% input$baseYear) %>% 
+      select(ID,year, programme) %>%
+      distinct() %>% 
+      group_by(year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=factor(year),y=count, fill=programme)) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      ggtitle("Unique participants by year") +
+      theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau()
+    
+    ggplotly(p)
+  })
+  
+  output$programmeRepeatPlot <- renderPlotly({
+    # repeat_participant <- infoOverview_r() %>% 
+    #   distinct(ID,programme,year) %>% # Avoid conjoint students appear twice
+    #   group_by(ID) %>% 
+    #   filter(row_number()==2) %>%
+    #   distinct(`ID`) %>%
+    #   nrow()
+    p <- overviewPlot_df() %>% 
+      #filter(year %in% input$baseYear) %>% 
+      select(ID,year, programme) %>%
+      distinct() %>% # Avoid conjoint students appear twice
+      arrange(year) %>% 
+      group_by(ID, programme) %>%
+      filter(row_number()>1) %>% # Returning students
+      ungroup() %>% 
+      group_by(year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=factor(year),y=count, fill=programme)) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      ggtitle("Repeat participants by year") +
+      theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau()
+    
     ggplotly(p)
   })
   
