@@ -70,25 +70,25 @@ ui <- dashboardPage(
        # Overview
        tabItem(
          tabName = "overview",
-         h4("Overview"),
+         #h4("Overview"),
          
-         # Info boxes
-         fluidRow(
-          infoBoxOutput("totalParticipant",width=3),
-          infoBoxOutput("uniqueParticipant",width=3),
-          infoBoxOutput("repeatParticipant",width=3),
-          infoBoxOutput("onetimeParticipant",width=3)
-         ),
+         # # Info boxes
+         # fluidRow(
+         #  infoBoxOutput("totalParticipant",width=3),
+         #  infoBoxOutput("uniqueParticipant",width=3),
+         #  infoBoxOutput("repeatParticipant",width=3),
+         #  infoBoxOutput("onetimeParticipant",width=3)
+         # ),
          
          # Overview chart
          fluidRow(
            column(6,
                   tabItem(tabName="Overview plot", width=NULL,
-                          plotlyOutput("totalPlot", height = "300px"))
+                          plotlyOutput("totalPlot", height = "400px"))
            ),
            column(6,
                   tabItem(tabName="Overview plot", width=NULL,
-                          plotlyOutput("uniquePlot", height = "300px"))
+                          plotlyOutput("uniquePlot", height = "400px"))
            )
          ),
 
@@ -127,7 +127,7 @@ ui <- dashboardPage(
        # Programme
        tabItem(
                tabName = "programme",
-               h2("Programme"),
+               #h4("Programme"),
                
                # # Info boxes
                # fluidRow(

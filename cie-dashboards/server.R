@@ -91,86 +91,46 @@ server <- function(input, output, session) {
     return(df)
   })
   
-  # Info boxes
-  output$totalParticipant <- renderInfoBox(
-    {
-      total_participant <- nrow(infoOverview_r() %>% filter(!programme %in% c("CIE Participant")))
-      infoBox(
-        "Total participant", #m vlaue here, icon= icon(), color=
-        total_participant
-      )
-    })
-  output$uniqueParticipant <- renderInfoBox(
-    {
-      unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
-      infoBox(
-        "Unique participant", #m vlaue here, icon= icon(), color=
-        unique_particpant
-      )
-    })
-  output$repeatParticipant <- renderInfoBox(
-    {
-      repeat_participant <- infoOverview_r() %>% 
-        distinct(ID,programme,year) %>% # Avoid conjoint students appear twice
-        group_by(ID) %>% 
-        filter(row_number()==2) %>%
-        distinct(`ID`) %>%
-        nrow()
-      unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
-      infoBox(
-        "Repeat participant", #m vlaue here, icon= icon(), color=
-        paste0(repeat_participant, " (", round(repeat_participant*100/unique_particpant,1),"%)")
-      )
-    })
-  output$onetimeParticipant <- renderInfoBox(
-    {
-      onetime_participant <- infoOverview_r() %>% group_by(ID) %>% distinct(ID,programme,year) %>% summarise(count=n()) %>% filter(count < 2) %>% distinct(`ID`) %>% nrow()
-      unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
-      infoBox(
-        "One-time participant", #m vlaue here, icon= icon(), color=
-        paste0(onetime_participant, " (", round(onetime_participant*100/unique_particpant,1),"%)")
-      )
-    })
-  ## Programme
-  output$programmeTotalParticipant <- renderInfoBox(
-    {
-      total_participant <- nrow(infoOverview_r())
-      infoBox(
-        "Total participant", #m vlaue here, icon= icon(), color=
-        total_participant
-      )
-    })
-  output$programmeUniqueParticipant <- renderInfoBox(
-    {
-      unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
-      infoBox(
-        "Unique participant", #m vlaue here, icon= icon(), color=
-        unique_particpant
-      )
-    })
-  output$programmeRepeatParticipant <- renderInfoBox(
-    {
-      repeat_participant <- infoOverview_r() %>% 
-        distinct(ID,programme,year) %>% # Avoid conjoint students appear twice
-        group_by(ID) %>% 
-        filter(row_number()==2) %>%
-        distinct(`ID`) %>%
-        nrow()
-      unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
-      infoBox(
-        "Repeat participant", #m vlaue here, icon= icon(), color=
-        paste0(repeat_participant, " (", round(repeat_participant*100/unique_particpant,1),"%)")
-      )
-    })
-  output$programmeOnetimeParticipant <- renderInfoBox(
-    {
-      onetime_participant <- infoOverview_r() %>% group_by(ID) %>% distinct(ID,programme,year) %>% summarise(count=n()) %>% filter(count < 2) %>% distinct(`ID`) %>% nrow()
-      unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
-      infoBox(
-        "One-time participant", #m vlaue here, icon= icon(), color=
-        paste0(onetime_participant, " (", round(onetime_participant*100/unique_particpant,1),"%)")
-      )
-    })
+  # # Info boxes
+  # output$totalParticipant <- renderInfoBox(
+  #   {
+  #     total_participant <- nrow(infoOverview_r() %>% filter(!programme %in% c("CIE Participant")))
+  #     infoBox(
+  #       "Total participant", #m vlaue here, icon= icon(), color=
+  #       total_participant
+  #     )
+  #   })
+  # output$uniqueParticipant <- renderInfoBox(
+  #   {
+  #     unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
+  #     infoBox(
+  #       "Unique participant", #m vlaue here, icon= icon(), color=
+  #       unique_particpant
+  #     )
+  #   })
+  # output$repeatParticipant <- renderInfoBox(
+  #   {
+  #     repeat_participant <- infoOverview_r() %>% 
+  #       distinct(ID,programme,year) %>% # Avoid conjoint students appear twice
+  #       group_by(ID) %>% 
+  #       filter(row_number()==2) %>%
+  #       distinct(`ID`) %>%
+  #       nrow()
+  #     unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
+  #     infoBox(
+  #       "Repeat participant", #m vlaue here, icon= icon(), color=
+  #       paste0(repeat_participant, " (", round(repeat_participant*100/unique_particpant,1),"%)")
+  #     )
+  #   })
+  # output$onetimeParticipant <- renderInfoBox(
+  #   {
+  #     onetime_participant <- infoOverview_r() %>% group_by(ID) %>% distinct(ID,programme,year) %>% summarise(count=n()) %>% filter(count < 2) %>% distinct(`ID`) %>% nrow()
+  #     unique_particpant <- infoOverview_r() %>% distinct(`ID`) %>% count()
+  #     infoBox(
+  #       "One-time participant", #m vlaue here, icon= icon(), color=
+  #       paste0(onetime_participant, " (", round(onetime_participant*100/unique_particpant,1),"%)")
+  #     )
+  #   })
   
   # Overview plot
   output$totalPlot <- renderPlotly({
@@ -186,24 +146,51 @@ server <- function(input, output, session) {
     ggplotly(p)
   })
   
+  # output$uniquePlot <- renderPlotly({
+  #   p <- overviewPlot_df() %>% 
+  #     select(ID,year) %>% 
+  #     distinct() %>% 
+  #     group_by(year) %>%
+  #     #distinct(ID) %>% 
+  #     summarise(count=n()) %>% 
+  #     ggplot() +
+  #     geom_line(aes(x=year,y=count)) +
+  #     ggtitle("Unique participants by year") +
+  #     theme_minimal() + guides(fill=FALSE, color=FALSE) + labs(y="", x = "") + scale_color_continuous_tableau() 
+  #   ggplotly(p)
+  # })
+  
   output$uniquePlot <- renderPlotly({
-    p <- overviewPlot_df() %>% 
-      select(ID,year) %>% 
-      distinct() %>% 
-      group_by(year) %>%
-      #distinct(ID) %>% 
-      summarise(count=n()) %>% 
-      ggplot() +
-      geom_line(aes(x=year,y=count)) +
+    p1 <- overviewPlot_df() %>% 
+      select(ID, year, programme) %>%
+      distinct() %>% # Avoid conjoint students appear twice
+      arrange(year) %>% 
+      group_by(ID, year) %>%
+      filter(row_number()==2) %>% # Repeat students
+      ungroup() %>% 
+      #distinct(ID, year) %>% 
+      group_by(year) %>% 
+      summarise(repeatParticipant=n())
+    
+    p2 <- overviewPlot_df() %>% 
+      select(ID, year) %>%
+      distinct() %>% # Avoid conjoint students appear twice
+      group_by(year) %>% 
+      summarise(uniqueCount=n()) %>% 
+      merge(p1, by="year") %>% 
+      mutate(oneTimeParticpant = uniqueCount - repeatParticipant) %>% 
+      gather(key="type_count", value="count", repeatParticipant, oneTimeParticpant) %>% 
+      ggplot(aes(x=factor(year),y=count, fill=type_count)) +
+      geom_bar(stat = "identity" ) +
       ggtitle("Unique participants by year") +
-      theme_minimal() + guides(fill=FALSE, color=FALSE) + labs(y="", x = "") + scale_color_continuous_tableau() 
-    #+ annotate("segment", xmin=(input$baseYear - 0.5), xmax = (input$baseYear + 0.5), alpha= .2)
-    ggplotly(p)
+      theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau()
+    
+    ggplotly(p2)
   })
   
   output$programmeUniquePlot <- renderPlotly({
     p <- overviewPlot_df() %>% 
-      #filter(year %in% input$baseYear) %>% 
       select(ID,year, programme) %>%
       distinct() %>% 
       group_by(year, programme) %>% 
@@ -218,14 +205,7 @@ server <- function(input, output, session) {
   })
   
   output$programmeRepeatPlot <- renderPlotly({
-    # repeat_participant <- infoOverview_r() %>% 
-    #   distinct(ID,programme,year) %>% # Avoid conjoint students appear twice
-    #   group_by(ID) %>% 
-    #   filter(row_number()==2) %>%
-    #   distinct(`ID`) %>%
-    #   nrow()
     p <- overviewPlot_df() %>% 
-      #filter(year %in% input$baseYear) %>% 
       select(ID,year, programme) %>%
       distinct() %>% # Avoid conjoint students appear twice
       arrange(year) %>% 
@@ -248,8 +228,8 @@ server <- function(input, output, session) {
     facultyPlot_df() %>% 
       group_by(`Owner of Major/Spec/Module`,year) %>% 
       summarise(count=n()) %>% 
-      ggplot() +
-      geom_bar(aes(x=reorder(`Owner of Major/Spec/Module`, count), count, fill=factor(year)), stat="identity", position = "dodge") +
+      ggplot(aes(x=reorder(`Owner of Major/Spec/Module`, count), count, fill=factor(year))) +
+      geom_bar(stat="identity", position = position_dodge2(width = 0.9, preserve = "single")) +
       guides(fill=FALSE) +
       coord_flip() +
       ggtitle("Faculty split overall") +
@@ -260,8 +240,8 @@ server <- function(input, output, session) {
   # Programme
   output$programmeN <- renderPlotly({
     programmePlot_df() %>% 
-      ggplot() +
-      geom_bar(aes(x=reorder(`programme`, count), count, fill=factor(year)), stat="identity", position = "dodge") +
+      ggplot(aes(x=reorder(`programme`, count), count, fill=factor(year))) +
+      geom_bar(stat="identity", position = position_dodge2(width = 0.9, preserve = "single")) +
       guides(fill=FALSE) +
       coord_flip() +
       ggtitle("Programme split overall") +
