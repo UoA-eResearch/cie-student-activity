@@ -133,17 +133,16 @@ server <- function(input, output, session) {
   #   })
   
   # Overview plot
-  output$totalPlot <- renderPlotly({
-    p <- overviewPlot_df() %>% 
+  output$totalPlot <- renderPlot({
+    overviewPlot_df() %>% 
       select(ID,year) %>%
       group_by(year) %>% 
       summarise(count=n()) %>% 
-      ggplot() +
-      geom_line(aes(x=year,y=count)) +
+      ggplot(aes(x=year,y=count, label=count)) +
+      geom_line(size=1, colour="#9ecae1") +
+      geom_text(aes(y=count+200), alpha=0.8) +
       ggtitle("Total participants by year") +
-      theme_minimal() + guides(fill=FALSE, color=FALSE) + labs(y="", x = "") + scale_color_continuous_tableau()
-    
-    ggplotly(p)
+      theme_minimal() + guides(fill=FALSE, color=FALSE) + labs(y="", x = "")
   })
   
   # output$uniquePlot <- renderPlotly({
@@ -178,13 +177,16 @@ server <- function(input, output, session) {
       group_by(year) %>% 
       summarise(uniqueCount=n()) %>% 
       merge(p1, by="year") %>% 
-      mutate(oneTimeParticpant = uniqueCount - repeatParticipant) %>% 
+      mutate(oneTimeParticpant = uniqueCount - repeatParticipant) %>%
+      mutate(repeatCount = repeatParticipant) %>% 
       gather(key="type_count", value="count", repeatParticipant, oneTimeParticpant) %>% 
       ggplot(aes(x=factor(year),y=count, fill=type_count)) +
       geom_bar(stat = "identity" ) +
+      geom_text(aes(label=uniqueCount, y=uniqueCount+50), alpha=0.5) +
+      geom_text(aes(label=paste0(repeatCount, " (", round(repeatCount*100/uniqueCount,0),"%)"), y=repeatCount*0.5), alpha=0.5) +
       ggtitle("Unique participants by year") +
       theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau()
+      scale_fill_brewer()
     
     ggplotly(p2)
   })

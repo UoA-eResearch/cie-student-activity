@@ -84,7 +84,7 @@ ui <- dashboardPage(
          fluidRow(
            column(6,
                   tabItem(tabName="Overview plot", width=NULL,
-                          plotlyOutput("totalPlot", height = "400px"))
+                          plotOutput("totalPlot", height = "400px"))
            ),
            column(6,
                   tabItem(tabName="Overview plot", width=NULL,
