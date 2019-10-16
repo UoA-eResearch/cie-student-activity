@@ -266,9 +266,11 @@ server <- function(input, output, session) {
       distinct() %>% 
       ggplot(aes(`Owner of Major/Spec/Module`,`programme`)) +
       geom_raster(aes(fill=count)) +
+      geom_text(aes(label=count, colour=count>200), size=3, alpha=0.4) +
       facet_wrap(year~.) +
       guides(color=FALSE, fill=FALSE) +
       scale_fill_gradient_tableau(na.value = "grey") +
+      scale_color_manual(guide = FALSE, values = c("black", "white")) +
       coord_equal() +
       theme_minimal() +
       theme(
