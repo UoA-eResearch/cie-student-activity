@@ -224,31 +224,33 @@ server <- function(input, output, session) {
   })
   
   # Faculty
-  output$facultyN <- renderPlotly({
+  output$facultyN <- renderPlot({
     facultyPlot_df() %>% 
       group_by(`Owner of Major/Spec/Module`,year) %>% 
       summarise(count=n()) %>% 
       ggplot(aes(x=reorder(`Owner of Major/Spec/Module`, count), count, fill=factor(year))) +
       geom_bar(stat="identity", position = position_dodge2(width = 0.9, preserve = "single")) +
-      guides(fill=FALSE) +
+      geom_text(aes(label=count, color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), hjust=-0.1) +
+      guides(color=FALSE) +
       coord_flip() +
       ggtitle("Faculty split overall") +
       theme_minimal() + 
-      scale_fill_tableau() + labs(x="", y="")
+      scale_fill_tableau() + scale_colour_tableau() +
+      labs(x="", y="")
   })
   
   # Programme
-  output$programmeN <- renderPlotly({
+  output$programmeN <- renderPlot({
     programmePlot_df() %>% 
       ggplot(aes(x=reorder(`programme`, count), count, fill=factor(year))) +
       geom_bar(stat="identity", position = position_dodge2(width = 0.9, preserve = "single")) +
-      guides(fill=FALSE) +
+      geom_text(aes(label=count, color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), hjust=-0.1) +
+      guides(color=FALSE) +
       coord_flip() +
       ggtitle("Programme split overall") +
       theme_minimal() + 
-      #labs(x="", y="", title="Programme split overall") +
-      #theme(plot.title = element_text(hjust=0)) +
-      scale_fill_tableau() + labs(x="", y="")
+      scale_fill_tableau() + scale_colour_tableau() +
+      labs(x="", y="")
   })
   
   # Programme split by faculty
