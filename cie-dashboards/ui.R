@@ -91,13 +91,12 @@ ui <- dashboardPage(
                           plotlyOutput("uniquePlot", height = "400px"))
            )
          ),
-
-         # Faculty split by programme
-         h4("Programme split by faculty"),
+         # Programme split overall
+         h4("Programme split"),
          fluidRow(
-           column(12,
-                  plotlyOutput("programmeFaculty", height="800px")
-           )     
+                 column(12,
+                        plotlyOutput("programmeN", height = "600px")
+                 )
          ),
          # Faculty split overall
          h4("Faculty split"),
@@ -107,12 +106,12 @@ ui <- dashboardPage(
             )       
 
          ),
-         # Programme split overall
-         h4("Programme split"),
+         # Faculty split by programme
+         h4("Programme split by faculty"),
          fluidRow(
-           column(12,
-                  plotlyOutput("programmeN", height = "600px")
-           )
+                 column(12,
+                        plotlyOutput("programmeFaculty", height="800px")
+                 )     
          ),
          # Table
          #h4("Data table"),
@@ -121,7 +120,6 @@ ui <- dashboardPage(
                   dataTableOutput("table")
             )
          )
-         
        ),
 
        # Programme
