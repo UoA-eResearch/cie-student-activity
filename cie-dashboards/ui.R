@@ -139,11 +139,11 @@ ui <- dashboardPage(
                fluidRow(
                        column(6,
                               tabItem(tabName="Overview plot", width=NULL,
-                                      plotlyOutput("programmeUniquePlot", height = "300px"))
+                                      plotOutput("programmeUniquePlot", height = "300px"))
                        ),
                        column(6,
                               tabItem(tabName="Overview plot", width=NULL,
-                                      plotlyOutput("programmeRepeatPlot", height = "300px"))
+                                      plotOutput("programmeRepeatPlot", height = "300px"))
                        )
                )
        ),

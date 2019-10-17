@@ -191,23 +191,22 @@ server <- function(input, output, session) {
     ggplotly(p2)
   })
   
-  output$programmeUniquePlot <- renderPlotly({
-    p <- overviewPlot_df() %>% 
+  output$programmeUniquePlot <- renderPlot({
+    overviewPlot_df() %>% 
       select(ID,year, programme) %>%
       distinct() %>% 
       group_by(year, programme) %>% 
       summarise(count=n()) %>% 
-      ggplot(aes(x=factor(year),y=count, fill=programme)) +
+      ggplot(aes(x=factor(year),y=count, fill=programme, label=count)) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(aes(colour=programme), vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       ggtitle("Unique participants by year") +
-      theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau()
-    
-    ggplotly(p)
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau() + scale_colour_tableau()
   })
   
-  output$programmeRepeatPlot <- renderPlotly({
-    p <- overviewPlot_df() %>% 
+  output$programmeRepeatPlot <- renderPlot({
+    overviewPlot_df() %>% 
       select(ID,year, programme) %>%
       distinct() %>% # Avoid conjoint students appear twice
       arrange(year) %>% 
@@ -216,13 +215,12 @@ server <- function(input, output, session) {
       ungroup() %>% 
       group_by(year, programme) %>% 
       summarise(count=n()) %>% 
-      ggplot(aes(x=factor(year),y=count, fill=programme)) +
+      ggplot(aes(x=factor(year),y=count, fill=programme, label=count)) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(aes(colour=programme), vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       ggtitle("Repeat participants by year") +
-      theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau()
-    
-    ggplotly(p)
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau() + scale_colour_tableau()
   })
   
   # Faculty
@@ -256,8 +254,6 @@ server <- function(input, output, session) {
   })
   
   # Programme split by faculty
-  # Create dataframe for heatmap
-  # TODO: facet by year
   output$programmeFaculty <- renderPlotly({
     p <- heatmap_df() %>% 
       group_by(`programme`,`Owner of Major/Spec/Module`, year) %>% 
@@ -266,7 +262,7 @@ server <- function(input, output, session) {
       distinct() %>% 
       ggplot(aes(`Owner of Major/Spec/Module`,`programme`)) +
       geom_raster(aes(fill=count)) +
-      geom_text(aes(label=count, colour=count>200), size=3, alpha=0.4) +
+      geom_text(aes(label=count, colour=count>100), size=2, alpha=0.4) +
       facet_wrap(year~.) +
       guides(color=FALSE, fill=FALSE) +
       scale_fill_gradient_tableau(na.value = "grey") +
