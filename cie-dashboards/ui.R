@@ -84,11 +84,11 @@ ui <- dashboardPage(
          fluidRow(
            column(6,
                   tabItem(tabName="Overview plot", width=NULL,
-                          plotOutput("totalPlot", height = "400px"))
+                          plotOutput("totalPlot", height = "300px"))
            ),
            column(6,
                   tabItem(tabName="Overview plot", width=NULL,
-                          plotlyOutput("uniquePlot", height = "400px"))
+                          plotlyOutput("uniquePlot", height = "300px"))
            )
          ),
          # Programme split overall
@@ -110,7 +110,7 @@ ui <- dashboardPage(
          h4("Programme split by faculty"),
          fluidRow(
                  column(12,
-                        plotlyOutput("programmeFaculty", height="800px")
+                        plotlyOutput("programmeSplitFaculty", height="800px")
                  )     
          ),
          # Table
@@ -125,27 +125,62 @@ ui <- dashboardPage(
        # Programme
        tabItem(
                tabName = "programme",
-               #h4("Programme"),
-               
-               # # Info boxes
-               # fluidRow(
-               #         infoBoxOutput("programmeTotalParticipant",width=3),
-               #         infoBoxOutput("programmeUniqueParticipant",width=3),
-               #         infoBoxOutput("programmeRepeatParticipant",width=3),
-               #         infoBoxOutput("programmeOnetimeParticipant",width=3)
-               # ),
                
                # Overview chart
                fluidRow(
                        column(6,
-                              tabItem(tabName="Overview plot", width=NULL,
+                              tabItem(tabName="programme", width=NULL,
                                       plotOutput("programmeUniquePlot", height = "300px"))
                        ),
                        column(6,
-                              tabItem(tabName="Overview plot", width=NULL,
+                              tabItem(tabName="programme", width=NULL,
                                       plotOutput("programmeRepeatPlot", height = "300px"))
                        )
+               ),
+               
+               # Faculty split
+               h3(""),
+               fluidRow(
+                       
+                       column(12,
+                              tabItem(tabName="programme", width=NULL,
+                                      plotOutput("programmeFacultyPlot", height = "600px"))
+                       )
+               ),
+               
+               # Department split
+               # h3(""),
+               # fluidRow(
+               #         column(12,
+               #                tabItem(tabName="programme", width=NULL,
+               #                        plotOutput("programmeDepartmentPlot"), height="1000px")
+               #         )
+               # )
+               
+               
+               h3(""),
+               fluidRow(
+                       column(6,
+                              tabItem(tabName="programme", width=NULL,
+                                      plotOutput("programmeGenderPlot", height = "300px"))
+                       ),
+                       column(6,
+                              tabItem(tabName="programme", width=NULL,
+                                      plotOutput("programmeEthinicityPlot", height = "300px"))
+                       )
                )
+
+               # Degree programme
+               
+               # Affiliation
+               
+               # Gender
+               
+               # Ethinicity
+               
+               # Iwi
+               
+               # Residency status
        ),
 
        # Velocity

@@ -15,7 +15,7 @@ library(plotly)
 library(shinyWidgets)
 
 # Import data
-allData <- read_csv("data/overview.csv")
+allData <- read_csv("data/all.csv")
 selection <- read_csv("data/tags_selection.csv")
 
 # Define server logic required to draw a histogram
@@ -74,6 +74,14 @@ server <- function(input, output, session) {
       summarise(count=n())
     return(df)
   })
+  generalPlot_df <- reactive({
+    if (input$tab == "programme") {
+        df <- filterData() %>% 
+          filter(year %in% input$baseYear) %>% 
+          filter(programme %in% input$baseProgramme)
+        return(df)
+    }
+  })
   # Update the filers based on selected year
   # observe({
   #   updatePickerInput(session, "baseProgramme", choices = sort(unique(facultyPlot_df()$programme)))
@@ -85,9 +93,9 @@ server <- function(input, output, session) {
     return(df)
   })
   debug_df <- reactive({
-    df <- filterData() %>%
-      filter(year %in% c(input$baseYear)) %>% 
-      distinct(ID,year,programme)  # Remove people who are conjoints
+    df <- filterData() %>% 
+      filter(year %in% input$baseYear) %>% 
+      filter(programme %in% input$baseProgramme)
     return(df)
   })
   
@@ -132,7 +140,8 @@ server <- function(input, output, session) {
   #     )
   #   })
   
-  # Overview plot
+  
+  ## Overview Dashboard
   output$totalPlot <- renderPlot({
     overviewPlot_df() %>% 
       select(ID,year) %>%
@@ -182,45 +191,13 @@ server <- function(input, output, session) {
       gather(key="type_count", value="count", repeatParticipant, oneTimeParticpant) %>% 
       ggplot(aes(x=factor(year),y=count, fill=type_count)) +
       geom_bar(stat = "identity" ) +
-      geom_text(aes(label=uniqueCount, y=uniqueCount+50), alpha=0.5) +
-      geom_text(aes(label=paste0(repeatCount, " (", round(repeatCount*100/uniqueCount,0),"%)"), y=repeatCount*0.5), alpha=0.5) +
+      geom_text(aes(label=uniqueCount, y=uniqueCount+50), size=3, alpha=0.5) +
+      geom_text(aes(label=paste0(repeatCount, " (", round(repeatCount*100/uniqueCount,0),"%)"), y=repeatCount*0.5), size=3, alpha=0.5) +
       ggtitle("Unique participants by year") +
       theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
       scale_fill_brewer()
     
     ggplotly(p2)
-  })
-  
-  output$programmeUniquePlot <- renderPlot({
-    overviewPlot_df() %>% 
-      select(ID,year, programme) %>%
-      distinct() %>% 
-      group_by(year, programme) %>% 
-      summarise(count=n()) %>% 
-      ggplot(aes(x=factor(year),y=count, fill=programme, label=count)) +
-      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-      geom_text(aes(colour=programme), vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-      ggtitle("Unique participants by year") +
-      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau() + scale_colour_tableau()
-  })
-  
-  output$programmeRepeatPlot <- renderPlot({
-    overviewPlot_df() %>% 
-      select(ID,year, programme) %>%
-      distinct() %>% # Avoid conjoint students appear twice
-      arrange(year) %>% 
-      group_by(ID, programme) %>%
-      filter(row_number()>1) %>% # Returning students
-      ungroup() %>% 
-      group_by(year, programme) %>% 
-      summarise(count=n()) %>% 
-      ggplot(aes(x=factor(year),y=count, fill=programme, label=count)) +
-      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-      geom_text(aes(colour=programme), vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-      ggtitle("Repeat participants by year") +
-      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau() + scale_colour_tableau()
   })
   
   # Faculty
@@ -254,7 +231,7 @@ server <- function(input, output, session) {
   })
   
   # Programme split by faculty
-  output$programmeFaculty <- renderPlotly({
+  output$programmeSplitFaculty <- renderPlotly({
     p <- heatmap_df() %>% 
       group_by(`programme`,`Owner of Major/Spec/Module`, year) %>% 
       summarise(count=n()) %>%
@@ -283,4 +260,95 @@ server <- function(input, output, session) {
   })
   
   output$table <- renderDataTable(debug_df())
+  
+  ## Programme Dashboard
+  output$programmeUniquePlot <- renderPlot({
+    overviewPlot_df() %>% 
+      select(ID,year, programme) %>%
+      distinct() %>% 
+      group_by(year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=factor(year),y=count, fill=programme, label=count)) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(aes(colour=programme), vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      ggtitle("Unique participants by year") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$programmeRepeatPlot <- renderPlot({
+    overviewPlot_df() %>% 
+      select(ID,year, programme) %>%
+      distinct() %>% # Avoid conjoint students appear twice
+      arrange(year) %>% 
+      group_by(ID, programme) %>%
+      filter(row_number()>1) %>% # Returning students
+      ungroup() %>% 
+      group_by(year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=factor(year),y=count, fill=programme, label=count)) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(aes(colour=programme), vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      ggtitle("Repeat participants by year") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$programmeFacultyPlot <- renderPlot({
+    generalPlot_df() %>% 
+      select(ID, year, programme, `Owner of Major/Spec/Module`) %>% 
+      group_by(`Owner of Major/Spec/Module`, year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=reorder(`Owner of Major/Spec/Module`, count), y=count, label=count, fill=factor(year), colour=factor(year))) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      coord_flip() +
+      facet_wrap(programme~., ncol=3) +
+      ggtitle("Faculty split") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  # output$programmeDepartmentPlot <- renderPlot({
+  #   generalPlot_df() %>% 
+  #     select(ID, year, programme, `Plan Description`) %>% 
+  #     group_by(`Plan Description`, year, programme) %>% 
+  #     summarise(count=n()) %>% 
+  #     ggplot(aes(x=reorder(`Plan Description`, count), y=count, label=count, fill=factor(year), colour=factor(year))) +
+  #     geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+  #     geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+  #     coord_flip() +
+  #     facet_wrap(programme~., nrow=1, ncol=4) +
+  #     ggtitle("Department split") +
+  #     theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+  #     scale_fill_tableau() + scale_colour_tableau()
+  # })
+  
+  output$programmeGenderPlot <- renderPlot({
+    generalPlot_df() %>% 
+      select(ID, year, programme, `Sex`) %>% 
+      group_by(`Sex`, year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=factor(year), y=count, label=count, fill=`Sex`, colour=`Sex`)) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      facet_wrap(programme~., ncol=3) +
+      ggtitle("Gender split") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$programmeEthinicityPlot <- renderPlot({
+    generalPlot_df() %>% 
+      select(ID, year, programme, `Ethnic Group`) %>% 
+      group_by(`Ethnic Group`, year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=factor(year), y=count, label=count, fill=`Ethnic Group`, colour=`Ethnic Group`)) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      facet_wrap(programme~., ncol=3) +
+      ggtitle("Ethinicity split") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
 }
