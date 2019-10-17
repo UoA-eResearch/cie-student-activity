@@ -144,6 +144,7 @@ df_stud <- df %>%
   filter(!is.na(`Acad Prog`)) %>% 
   filter(grepl("^\\d{4}", programme)) %>% 
   mutate(year=substring(`programme`,0,4), programme=substring(`programme`,6)) %>% 
+  filter(updated == year) %>% 
   distinct()
 head(df_stud,10)
 ```
