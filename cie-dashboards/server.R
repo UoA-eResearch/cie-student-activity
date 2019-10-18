@@ -273,7 +273,8 @@ server <- function(input, output, session) {
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       ggtitle("Unique participants by year") +
-      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "")
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(panel.background = element_rect(fill="grey99", colour="grey99"))
       #scale_fill_tableau() + scale_colour_tableau()
   })
   
@@ -292,7 +293,8 @@ server <- function(input, output, session) {
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       ggtitle("Repeat participants by year") +
-      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "")
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(panel.background = element_rect(fill="grey99", colour="grey99"))
       #scale_fill_tableau() + scale_colour_tableau()
   })
   
@@ -309,7 +311,7 @@ server <- function(input, output, session) {
       facet_wrap(programme~., ncol=3) +
       ggtitle("Faculty split") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
   })
   
@@ -340,7 +342,7 @@ server <- function(input, output, session) {
       facet_wrap(programme~., ncol=3) +
       ggtitle("Gender") +
       theme_minimal() + 
-      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       guides(colour=FALSE) + labs(y="", x = "") +
       scale_fill_tableau() + scale_colour_tableau()
   })
@@ -357,7 +359,7 @@ server <- function(input, output, session) {
       facet_wrap(programme~., ncol=3) +
       ggtitle("Ethinic group") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
   })
   
@@ -373,7 +375,7 @@ server <- function(input, output, session) {
       facet_wrap(programme~., ncol=3) +
       ggtitle("Residency status") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
   })
   
@@ -390,7 +392,7 @@ server <- function(input, output, session) {
       facet_wrap(programme~., ncol=3) +
       ggtitle("Iwi") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
   })
 }
