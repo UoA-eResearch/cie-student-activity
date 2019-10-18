@@ -157,16 +157,16 @@ ui <- dashboardPage(
                #         )
                # )
                
-               
+               # Gender and Ethinicity Plot
                h3(""),
                fluidRow(
                        column(6,
                               tabItem(tabName="programme", width=NULL,
-                                      plotOutput("programmeGenderPlot", height = "300px"))
+                                      plotOutput("programmeGenderPlot", height = "400px"))
                        ),
                        column(6,
                               tabItem(tabName="programme", width=NULL,
-                                      plotOutput("programmeEthinicityPlot", height = "300px"))
+                                      plotOutput("programmeEthinicityPlot", height = "400px"))
                        )
                )
 

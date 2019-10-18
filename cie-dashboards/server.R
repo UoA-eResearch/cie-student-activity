@@ -297,6 +297,7 @@ server <- function(input, output, session) {
   output$programmeFacultyPlot <- renderPlot({
     generalPlot_df() %>% 
       select(ID, year, programme, `Owner of Major/Spec/Module`) %>% 
+      distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
       group_by(`Owner of Major/Spec/Module`, year, programme) %>% 
       summarise(count=n()) %>% 
       ggplot(aes(x=reorder(`Owner of Major/Spec/Module`, count), y=count, label=count, fill=factor(year), colour=factor(year))) +
@@ -327,6 +328,7 @@ server <- function(input, output, session) {
   output$programmeGenderPlot <- renderPlot({
     generalPlot_df() %>% 
       select(ID, year, programme, `Sex`) %>% 
+      distinct() %>% # Avoid doublecounting conjoints
       group_by(`Sex`, year, programme) %>% 
       summarise(count=n()) %>% 
       ggplot(aes(x=factor(year), y=count, label=count, fill=`Sex`, colour=`Sex`)) +
@@ -341,6 +343,7 @@ server <- function(input, output, session) {
   output$programmeEthinicityPlot <- renderPlot({
     generalPlot_df() %>% 
       select(ID, year, programme, `Ethnic Group`) %>% 
+      distinct() %>% # Avoid doublecounting conjoints
       group_by(`Ethnic Group`, year, programme) %>% 
       summarise(count=n()) %>% 
       ggplot(aes(x=factor(year), y=count, label=count, fill=`Ethnic Group`, colour=`Ethnic Group`)) +
