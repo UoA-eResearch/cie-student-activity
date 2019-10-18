@@ -268,12 +268,13 @@ server <- function(input, output, session) {
       distinct() %>% 
       group_by(year, programme) %>% 
       summarise(count=n()) %>% 
-      ggplot(aes(x=factor(year),y=count, fill=programme, label=count)) +
+      ggplot(aes(x=factor(year),y=count, label=count)) +
+      facet_wrap(programme~.) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-      geom_text(aes(colour=programme), vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       ggtitle("Unique participants by year") +
-      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau("Classic 10 Medium") + scale_colour_tableau("Classic 10 Medium")
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "")
+      #scale_fill_tableau() + scale_colour_tableau()
   })
   
   output$programmeRepeatPlot <- renderPlot({
@@ -286,12 +287,13 @@ server <- function(input, output, session) {
       ungroup() %>% 
       group_by(year, programme) %>% 
       summarise(count=n()) %>% 
-      ggplot(aes(x=factor(year),y=count, fill=programme, label=count)) +
+      ggplot(aes(x=factor(year),y=count, label=count)) +
+      facet_wrap(programme~.) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-      geom_text(aes(colour=programme), vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       ggtitle("Repeat participants by year") +
-      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau("Classic 10 Medium") + scale_colour_tableau("Classic 10 Medium")
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "")
+      #scale_fill_tableau() + scale_colour_tableau()
   })
   
   output$programmeFacultyPlot <- renderPlot({
@@ -300,13 +302,14 @@ server <- function(input, output, session) {
       distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
       group_by(`Owner of Major/Spec/Module`, year, programme) %>% 
       summarise(count=n()) %>% 
-      ggplot(aes(x=reorder(`Owner of Major/Spec/Module`, count), y=count, label=count, fill=factor(year), colour=factor(year))) +
+      ggplot(aes(x=reorder(`Owner of Major/Spec/Module`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-      geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       #coord_flip() +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Faculty split") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
       scale_fill_tableau() + scale_colour_tableau()
   })
   
@@ -331,13 +334,15 @@ server <- function(input, output, session) {
       distinct() %>% # Avoid doublecounting conjoints
       group_by(`Sex`, year, programme) %>% 
       summarise(count=n()) %>% 
-      ggplot(aes(x=factor(year), y=count, label=count, fill=`Sex`, colour=`Sex`)) +
+      ggplot(aes(x=reorder(`Sex`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Gender") +
-      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau("Classic 10 Medium") + scale_colour_tableau("Classic 10 Medium")
+      theme_minimal() + 
+      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      guides(colour=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau() + scale_colour_tableau()
   })
   
   output$programmeEthinicityPlot <- renderPlot({
@@ -346,13 +351,14 @@ server <- function(input, output, session) {
       distinct() %>% # Avoid doublecounting conjoints
       group_by(`Ethnic Group`, year, programme) %>% 
       summarise(count=n()) %>% 
-      ggplot(aes(x=factor(year), y=count, label=count, fill=`Ethnic Group`, colour=`Ethnic Group`)) +
+      ggplot(aes(x=reorder(`Ethnic Group`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Ethinic group") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau("Classic 10 Medium") + scale_colour_tableau("Classic 10 Medium")
+      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      scale_fill_tableau() + scale_colour_tableau()
   })
   
   output$programmeResidencyPlot <- renderPlot({
@@ -361,27 +367,30 @@ server <- function(input, output, session) {
       distinct() %>% # Avoid doublecounting conjoints
       group_by(`Residency Status`, year, programme) %>% 
       summarise(count=n()) %>% 
-      ggplot(aes(x=factor(year), y=count, label=count, fill=`Residency Status`, colour=`Residency Status`)) +
+      ggplot(aes(x=reorder(`Residency Status`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Residency status") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau("Classic 10 Medium") + scale_colour_tableau("Classic 10 Medium")
+      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      scale_fill_tableau() + scale_colour_tableau()
   })
   
   output$programmeIwiPlot <- renderPlot({
     generalPlot_df() %>% 
-      select(ID, year, programme, `Iwi`) %>% 
+      select(ID, year, programme, `Descr`) %>% 
       distinct() %>% # Avoid doublecounting conjoints
-      group_by(`Iwi`, year, programme) %>% 
+      group_by(`Descr`, year, programme) %>% 
       summarise(count=n()) %>% 
-      ggplot(aes(x=factor(year), y=count, label=count, fill=`Iwi`, colour=`Iwi`)) +
+      filter(!`Descr` == "NA") %>% 
+      ggplot(aes(x=reorder(`Descr`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Iwi") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau("Classic 10 Medium") + scale_colour_tableau("Classic 10 Medium")
+      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      scale_fill_tableau() + scale_colour_tableau()
   })
 }
