@@ -157,6 +157,12 @@ ui <- dashboardPage(
                #         )
                # )
                
+               
+
+               # Degree programme
+               
+               # Affiliation
+               
                # Gender and Ethinicity Plot
                h3(""),
                fluidRow(
@@ -168,19 +174,20 @@ ui <- dashboardPage(
                               tabItem(tabName="programme", width=NULL,
                                       plotOutput("programmeEthinicityPlot", height = "400px"))
                        )
+               ),
+               
+               # Iwi and Residency Plot
+               h3(""),
+               fluidRow(
+                       column(6,
+                              tabItem(tabName="programme", width=NULL,
+                                      plotOutput("programmeResidencyPlot", height = "400px"))
+                       ),
+                       column(6,
+                              tabItem(tabName="programme", width=NULL,
+                                      plotOutput("programmeIwiPlot", height = "400px"))
+                       )
                )
-
-               # Degree programme
-               
-               # Affiliation
-               
-               # Gender
-               
-               # Ethinicity
-               
-               # Iwi
-               
-               # Residency status
        ),
 
        # Velocity

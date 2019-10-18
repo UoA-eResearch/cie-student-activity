@@ -273,7 +273,7 @@ server <- function(input, output, session) {
       geom_text(aes(colour=programme), vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       ggtitle("Unique participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau() + scale_colour_tableau()
+      scale_fill_tableau("Classic 10 Medium") + scale_colour_tableau("Classic 10 Medium")
   })
   
   output$programmeRepeatPlot <- renderPlot({
@@ -291,7 +291,7 @@ server <- function(input, output, session) {
       geom_text(aes(colour=programme), vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       ggtitle("Repeat participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau() + scale_colour_tableau()
+      scale_fill_tableau("Classic 10 Medium") + scale_colour_tableau("Classic 10 Medium")
   })
   
   output$programmeFacultyPlot <- renderPlot({
@@ -303,7 +303,7 @@ server <- function(input, output, session) {
       ggplot(aes(x=reorder(`Owner of Major/Spec/Module`, count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-      coord_flip() +
+      #coord_flip() +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Faculty split") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
@@ -335,9 +335,9 @@ server <- function(input, output, session) {
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       facet_wrap(programme~., ncol=3) +
-      ggtitle("Gender split") +
+      ggtitle("Gender") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau() + scale_colour_tableau()
+      scale_fill_tableau("Classic 10 Medium") + scale_colour_tableau("Classic 10 Medium")
   })
   
   output$programmeEthinicityPlot <- renderPlot({
@@ -350,8 +350,38 @@ server <- function(input, output, session) {
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       facet_wrap(programme~., ncol=3) +
-      ggtitle("Ethinicity split") +
+      ggtitle("Ethinic group") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      scale_fill_tableau() + scale_colour_tableau()
+      scale_fill_tableau("Classic 10 Medium") + scale_colour_tableau("Classic 10 Medium")
+  })
+  
+  output$programmeResidencyPlot <- renderPlot({
+    generalPlot_df() %>% 
+      select(ID, year, programme, `Residency Status`) %>% 
+      distinct() %>% # Avoid doublecounting conjoints
+      group_by(`Residency Status`, year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=factor(year), y=count, label=count, fill=`Residency Status`, colour=`Residency Status`)) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      facet_wrap(programme~., ncol=3) +
+      ggtitle("Residency status") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau("Classic 10 Medium") + scale_colour_tableau("Classic 10 Medium")
+  })
+  
+  output$programmeIwiPlot <- renderPlot({
+    generalPlot_df() %>% 
+      select(ID, year, programme, `Iwi`) %>% 
+      distinct() %>% # Avoid doublecounting conjoints
+      group_by(`Iwi`, year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=factor(year), y=count, label=count, fill=`Iwi`, colour=`Iwi`)) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      facet_wrap(programme~., ncol=3) +
+      ggtitle("Iwi") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau("Classic 10 Medium") + scale_colour_tableau("Classic 10 Medium")
   })
 }
