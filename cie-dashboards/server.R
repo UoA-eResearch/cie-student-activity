@@ -309,26 +309,56 @@ server <- function(input, output, session) {
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       #coord_flip() +
       facet_wrap(programme~., ncol=3) +
-      ggtitle("Faculty split") +
+      ggtitle("Faculty") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
   })
   
-  # output$programmeDepartmentPlot <- renderPlot({
-  #   generalPlot_df() %>% 
-  #     select(ID, year, programme, `Plan Description`) %>% 
-  #     group_by(`Plan Description`, year, programme) %>% 
-  #     summarise(count=n()) %>% 
-  #     ggplot(aes(x=reorder(`Plan Description`, count), y=count, label=count, fill=factor(year), colour=factor(year))) +
-  #     geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-  #     geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-  #     coord_flip() +
-  #     facet_wrap(programme~., nrow=1, ncol=4) +
-  #     ggtitle("Department split") +
-  #     theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-  #     scale_fill_tableau() + scale_colour_tableau()
-  # })
+  output$programmeDepartmentPlot <- renderPlotly({
+    if (length(input$baseYear)>1) {
+      generalPlot_df() %>%
+        filter(`Owner of Major/Spec/Module` %in% input$programmeFacultyDepartment) %>% # Filter selected faculties
+        select(ID, year, programme, `Plan Description`, `Owner of Major/Spec/Module`) %>%
+        group_by(`Plan Description`, year, programme ,`Owner of Major/Spec/Module`) %>%
+        summarise(count=n(), ymin=min(count), ymax=max(count)) %>%
+        #ggplot(aes(x=reorder(`Plan Description`, count), y=count, label=count, fill=factor(year), colour=factor(year))) +
+        #geom_bar(position = position_dodge2(width = 0.1, preserve = "single"), stat = "identity" ) +
+        #geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+        #ggplot(aes(x=reorder(`Plan Description`, count), xend=reorder(`Plan Description`, count), y =count, ymin=0, ymax=count, label=count, fill=factor(year), colour=factor(year))) +
+        #geom_linerange(position = position_dodge2(width = 1)) +
+        # geom_point(position = position_dodge2(width = 1), size=4, alpha=0.6) +
+        # geom_text(hjust=0, nudge_y = 1.5) +
+        group_by(`Plan Description`, programme ,`Owner of Major/Spec/Module`) %>%
+        mutate(ymin=min(count), ymax=max(count)) %>% 
+        ggplot(aes(x=reorder(`Plan Description`, count), xend=reorder(`Plan Description`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
+        geom_segment(aes(y=ymin, yend=ymax), color="grey") +
+        geom_point(size=4, alpha=1) +
+        #geom_text(hjust=0, nudge_y = 1.5) +
+        geom_text(color="white", size=2) +
+        coord_flip() +
+        facet_grid(`Owner of Major/Spec/Module` ~ programme,  scales = "free_y", space = "free_y") +
+        ggtitle("Department") +
+        theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
+        scale_fill_tableau() + scale_colour_tableau()
+    }
+    else {
+      generalPlot_df() %>%
+        filter(`Owner of Major/Spec/Module` %in% input$programmeFacultyDepartment) %>% # Filter selected faculties
+        select(ID, year, programme, `Plan Description`, `Owner of Major/Spec/Module`) %>%
+        group_by(`Plan Description`, year, programme ,`Owner of Major/Spec/Module`) %>%
+        summarise(count=n()) %>% 
+        ggplot(aes(x=reorder(`Plan Description`, count), xend=reorder(`Plan Description`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
+        geom_segment(aes(y=0)) +
+        geom_point(size=2, alpha=.9) +
+        geom_text(hjust=0, nudge_y=1.5, size=3) +
+        coord_flip() +
+        facet_grid(`Owner of Major/Spec/Module` ~ programme,  scales = "free_y", space = "free_y") +
+        ggtitle("Department") +
+        theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
+        scale_fill_tableau() + scale_colour_tableau()
+    }
+  })
   
   output$programmeGenderPlot <- renderPlot({
     generalPlot_df() %>% 

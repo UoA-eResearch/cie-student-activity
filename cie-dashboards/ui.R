@@ -141,7 +141,6 @@ ui <- dashboardPage(
                # Faculty split
                h3(""),
                fluidRow(
-                       
                        column(12,
                               tabItem(tabName="programme", width=NULL,
                                       plotOutput("programmeFacultyPlot", height = "600px"))
@@ -149,13 +148,20 @@ ui <- dashboardPage(
                ),
                
                # Department split
-               # h3(""),
-               # fluidRow(
-               #         column(12,
-               #                tabItem(tabName="programme", width=NULL,
-               #                        plotOutput("programmeDepartmentPlot"), height="1000px")
-               #         )
-               # )
+               pickerInput(
+                 "programmeFacultyDepartment",
+                 "Faculty",
+                 selected="Engineering",
+                 choices = sort(unique(availProg$`Owner of Major/Spec/Module`)),
+                 options = list(`actions-box` = TRUE, placeholder="Select Faculty..."),
+                 multiple = T
+               ),
+               fluidRow(
+                       column(12,
+                              tabItem(tabName="programme", width=NULL,
+                                      plotlyOutput("programmeDepartmentPlot", height="800px"))
+                       )
+               ),
                
                
 
