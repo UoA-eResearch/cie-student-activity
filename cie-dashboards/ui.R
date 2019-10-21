@@ -153,7 +153,7 @@ ui <- dashboardPage(
                  "Faculty",
                  selected="Engineering",
                  choices = sort(unique(availProg$`Owner of Major/Spec/Module`)),
-                 options = list(`actions-box` = TRUE, placeholder="Select Faculty..."),
+                 options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
                  multiple = T
                ),
                fluidRow(
@@ -163,11 +163,29 @@ ui <- dashboardPage(
                        )
                ),
                
-               
-
-               # Degree programme
-               
-               # Affiliation
+               # Affiliation Split
+               h3(""),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="programme", width=NULL,
+                                plotOutput("programmeAffiliationPlot", height = "600px"))
+                 )
+               ),
+               # Degree split
+               pickerInput(
+                 "programmeAffiliationDegree",
+                 "Affiliation",
+                 selected="Undergraduate",
+                 choices = sort(unique(availProg$`Programme Level`)),
+                 options = list(`actions-box` = TRUE, placeholder="Select affiliation..."),
+                 multiple = T
+               ),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="programme", width=NULL,
+                                plotlyOutput("programmeDegreePlot", height="850px"))
+                 )
+               ),
                
                # Gender and Ethinicity Plot
                h3(""),

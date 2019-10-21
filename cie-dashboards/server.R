@@ -351,10 +351,64 @@ server <- function(input, output, session) {
         ggplot(aes(x=reorder(`Plan Description`, count), xend=reorder(`Plan Description`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
         geom_segment(aes(y=0)) +
         geom_point(size=2, alpha=.9) +
-        geom_text(hjust=0, nudge_y=1.5, size=3) +
+        geom_text(hjust=0, nudge_y=2.5, size=3) +
         coord_flip() +
         facet_grid(`Owner of Major/Spec/Module` ~ programme,  scales = "free_y", space = "free_y") +
         ggtitle("Department") +
+        theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
+        scale_fill_tableau() + scale_colour_tableau()
+    }
+  })
+  
+  output$programmeAffiliationPlot <- renderPlot({
+    generalPlot_df() %>% 
+      select(ID, year, programme, `Programme Level`) %>% 
+      distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
+      group_by(`Programme Level`, year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=reorder(`Programme Level`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      #coord_flip() +
+      facet_wrap(programme~., ncol=3) +
+      ggtitle("Affiliation") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$programmeDegreePlot <- renderPlotly({
+    if (length(input$baseYear)>1) {
+      generalPlot_df() %>%
+        filter(`Programme Level` %in% input$programmeAffiliationDegree) %>% # Filter selected
+        select(ID, year, programme, `Descriptio`, `Programme Level`) %>%
+        group_by(year, programme ,`Descriptio`, `Programme Level`) %>%
+        summarise(count=n(), ymin=min(count), ymax=max(count)) %>%
+        group_by(programme , `Descriptio`, `Programme Level`) %>%
+        mutate(ymin=min(count), ymax=max(count)) %>% 
+        ggplot(aes(x=reorder(`Descriptio`, count), xend=reorder(`Descriptio`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
+        geom_segment(aes(y=ymin, yend=ymax), color="grey") +
+        geom_point(size=4, alpha=1) +
+        geom_text(color="white", size=2) +
+        coord_flip() +
+        facet_grid(`Programme Level` ~ programme,  scales = "free_y", space = "free_y") +
+        ggtitle("Degree") +
+        theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
+        scale_fill_tableau() + scale_colour_tableau()
+    }
+    else {
+      generalPlot_df() %>%
+        filter(`Programme Level` %in% input$programmeAffiliationDegree) %>% # Filter selected
+        select(ID, year, programme, `Descriptio`, `Programme Level`) %>%
+        group_by(year, programme ,`Descriptio`, `Programme Level`) %>%
+        summarise(count=n()) %>%
+        ggplot(aes(x=reorder(`Descriptio`, count), xend=reorder(`Descriptio`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
+        geom_segment(aes(y=0)) +
+        geom_point(size=2, alpha=.9) +
+        geom_text(hjust=0, nudge_y=2.5, size=3) +
+        coord_flip() +
+        facet_grid(`Programme Level` ~ programme,  scales = "free_y", space = "free_y") +
+        ggtitle("Degree") +
         theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
         scale_fill_tableau() + scale_colour_tableau()
     }
