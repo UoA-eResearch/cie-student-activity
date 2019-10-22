@@ -101,9 +101,11 @@ ui <- dashboardPage(
          # Faculty split overall
          h4("Faculty split"),
          fluidRow(
-            column(12,
+            column(8,
                    plotOutput("facultyN", height = "800px")
-            )       
+            ),
+            column(4,
+                   plotlyOutput("facultyNPercentage", height = "800px"))
 
          ),
          # Faculty split by programme
@@ -183,7 +185,7 @@ ui <- dashboardPage(
                fluidRow(
                  column(12,
                         tabItem(tabName="programme", width=NULL,
-                                plotlyOutput("programmeDegreePlot", height="850px"))
+                                plotlyOutput("programmeDegreePlot", height="1000px"))
                  )
                ),
                

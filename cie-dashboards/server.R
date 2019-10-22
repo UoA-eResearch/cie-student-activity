@@ -216,6 +216,24 @@ server <- function(input, output, session) {
       labs(x="", y="")
   })
   
+  output$facultyNPercentage <- renderPlotly({
+    facultyPlot_df() %>% 
+      group_by(`Owner of Major/Spec/Module`,year) %>% 
+      summarise(count=n()) %>% 
+      group_by(year) %>% 
+      mutate(sum_count=sum(count)) %>% 
+      ggplot(aes(x=factor(year), y=count, fill=`Owner of Major/Spec/Module`, text=paste0(round(count*100/sum_count,0),"%")), alpha=0.5) +
+      geom_bar(stat="identity", position = "stack") +
+      #scale_y_continuous(labels = scales::percent()) +
+      #geom_text(aes(label=count, color=`Owner of Major/Spec/Module`), position = position_fill(width = 0.9, preserve = "single")) +
+      geom_text(aes(label=if_else(count/sum_count<0.016, "", paste0(round(count*100/sum_count,0),"%"))), position = position_stack(vjust=.5), size = 4, color="black", alpha=0.8) +
+      guides(color=FALSE) +
+      ggtitle("Faculty split percentage") +
+      theme_minimal() + 
+      scale_fill_tableau("Classic 20") + scale_colour_tableau() +
+      labs(x="", y="")
+  })
+  
   # Programme
   output$programmeN <- renderPlot({
     programmePlot_df() %>% 
