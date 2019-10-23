@@ -402,8 +402,94 @@ ui <- dashboardPage(
 
        # Create and Maker Space
        tabItem(
-         tabName = "createmaker",
-         h2("Create and Maker Space")
+               tabName = "createmaker",
+               
+               # Overview chart
+               fluidRow(
+                 column(6,
+                        tabItem(tabName="createmaker", width=NULL,
+                                plotOutput("createmakerUniquePlot", height = "300px"))
+                 ),
+                 column(6,
+                        tabItem(tabName="createmaker", width=NULL,
+                                plotOutput("createmakerRepeatPlot", height = "300px"))
+                 )
+               ),
+               
+               # Faculty split
+               h3(""),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="createmaker", width=NULL,
+                                plotOutput("createmakerFacultyPlot", height = "600px"))
+                 )
+               ),
+               
+               # Department split
+               pickerInput(
+                 "createmakerFacultyDepartment",
+                 "Faculty",
+                 selected="Engineering",
+                 choices = sort(unique(availProg$`Owner of Major/Spec/Module`)),
+                 options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
+                 multiple = T
+               ),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="createmaker", width=NULL,
+                                plotlyOutput("createmakerDepartmentPlot", height="800px"))
+                 )
+               ),
+               
+               # Affiliation Split
+               h3(""),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="createmaker", width=NULL,
+                                plotOutput("createmakerAffiliationPlot", height = "600px"))
+                 )
+               ),
+               # Degree split
+               pickerInput(
+                 "createmakerAffiliationDegree",
+                 "Affiliation",
+                 selected="Undergraduate",
+                 choices = sort(unique(availProg$`Programme Level`)),
+                 options = list(`actions-box` = TRUE, placeholder="Select affiliation..."),
+                 multiple = T
+               ),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="createmaker", width=NULL,
+                                plotlyOutput("createmakerDegreePlot", height="1000px"))
+                 )
+               ),
+               
+               # Gender and Ethinicity Plot
+               h3(""),
+               fluidRow(
+                 column(6,
+                        tabItem(tabName="createmaker", width=NULL,
+                                plotOutput("createmakerGenderPlot", height = "400px"))
+                 ),
+                 column(6,
+                        tabItem(tabName="createmaker", width=NULL,
+                                plotOutput("createmakerEthinicityPlot", height = "400px"))
+                 )
+               ),
+               
+               # Iwi and Residency Plot
+               h3(""),
+               fluidRow(
+                 column(6,
+                        tabItem(tabName="createmaker", width=NULL,
+                                plotOutput("createmakerResidencyPlot", height = "400px"))
+                 ),
+                 column(6,
+                        tabItem(tabName="createmaker", width=NULL,
+                                plotOutput("createmakerIwiPlot", height = "400px"))
+                 )
+               )
        )
      )
    )
