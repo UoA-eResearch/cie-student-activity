@@ -218,8 +218,94 @@ ui <- dashboardPage(
 
        # Velocity
        tabItem(
-         tabName = "velocity",
-         h2("Velocity")
+               tabName = "velocity",
+               
+               # Overview chart
+               fluidRow(
+                 column(6,
+                        tabItem(tabName="velocity", width=NULL,
+                                plotOutput("velocityUniquePlot", height = "300px"))
+                 ),
+                 column(6,
+                        tabItem(tabName="velocity", width=NULL,
+                                plotOutput("velocityRepeatPlot", height = "300px"))
+                 )
+               ),
+               
+               # Faculty split
+               h3(""),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="velocity", width=NULL,
+                                plotOutput("velocityFacultyPlot", height = "600px"))
+                 )
+               ),
+               
+               # Department split
+               pickerInput(
+                 "velocityFacultyDepartment",
+                 "Faculty",
+                 selected="Engineering",
+                 choices = sort(unique(availProg$`Owner of Major/Spec/Module`)),
+                 options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
+                 multiple = T
+               ),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="velocity", width=NULL,
+                                plotlyOutput("velocityDepartmentPlot", height="800px"))
+                 )
+               ),
+               
+               # Affiliation Split
+               h3(""),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="velocity", width=NULL,
+                                plotOutput("velocityAffiliationPlot", height = "600px"))
+                 )
+               ),
+               # Degree split
+               pickerInput(
+                 "velocityAffiliationDegree",
+                 "Affiliation",
+                 selected="Undergraduate",
+                 choices = sort(unique(availProg$`Programme Level`)),
+                 options = list(`actions-box` = TRUE, placeholder="Select affiliation..."),
+                 multiple = T
+               ),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="velocity", width=NULL,
+                                plotlyOutput("velocityDegreePlot", height="1000px"))
+                 )
+               ),
+               
+               # Gender and Ethinicity Plot
+               h3(""),
+               fluidRow(
+                 column(6,
+                        tabItem(tabName="velocity", width=NULL,
+                                plotOutput("velocityGenderPlot", height = "400px"))
+                 ),
+                 column(6,
+                        tabItem(tabName="velocity", width=NULL,
+                                plotOutput("velocityEthinicityPlot", height = "400px"))
+                 )
+               ),
+               
+               # Iwi and Residency Plot
+               h3(""),
+               fluidRow(
+                 column(6,
+                        tabItem(tabName="velocity", width=NULL,
+                                plotOutput("velocityResidencyPlot", height = "400px"))
+                 ),
+                 column(6,
+                        tabItem(tabName="velocity", width=NULL,
+                                plotOutput("velocityIwiPlot", height = "400px"))
+                 )
+               )
        ),
 
        # Unleash Space

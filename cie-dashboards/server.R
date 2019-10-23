@@ -32,7 +32,22 @@ server <- function(input, output, session) {
       filter(programme %in% df1$tag_programme)
     return(df2)
   })
-  
+  # Update the filers based on selected year
+  observe({
+    updatePickerInput(session, "baseProgramme", choices = sort(unique(filterData()$programme)))
+    if (input$tab %in% c("programme","overview")) {
+      updatePickerInput(session, "baseProgramme", selected = "CIE Participant")
+    }
+    if (input$tab == "velocity") {
+      updatePickerInput(session, "baseProgramme", selected = "Velocity Participant")
+    }
+    if (input$tab == "unleash") {
+      updatePickerInput(session, "baseProgramme", selected = "Unleash Space Participant")
+    }
+    if (input$tab == "createmaker") {
+      updatePickerInput(session, "baseProgramme", selected = "Create and Make Space Workshop Participant")
+    }
+  })
   infoOverview_r <- reactive({
     # Apply inputs as filter criteria
     df <- filterData() %>% 
@@ -53,7 +68,7 @@ server <- function(input, output, session) {
       distinct(ID,year,programme) %>% # Remove people who are conjoints
       filter(!programme %in% c("CIE Participant"))
     
-    if (input$tab == "programme") {
+    if (input$tab != "overview") {
       df <- filterData() %>% 
         distinct(ID,year,programme) %>% # Remove people who are conjoints
         filter(programme %in% input$baseProgramme)
@@ -75,17 +90,13 @@ server <- function(input, output, session) {
     return(df)
   })
   generalPlot_df <- reactive({
-    if (input$tab == "programme") {
+    if (input$tab != "overview") {
         df <- filterData() %>% 
           filter(year %in% input$baseYear) %>% 
           filter(programme %in% input$baseProgramme)
         return(df)
     }
   })
-  # Update the filers based on selected year
-  # observe({
-  #   updatePickerInput(session, "baseProgramme", choices = sort(unique(facultyPlot_df()$programme)))
-  # })
   heatmap_df <- reactive({
     df <- filterData() %>% 
       filter(year %in% c(input$baseYear)) %>%
@@ -217,7 +228,7 @@ server <- function(input, output, session) {
   })
   
   output$facultyNPercentage <- renderPlotly({
-    facultyPlot_df() %>% 
+    p <- facultyPlot_df() %>% 
       group_by(`Owner of Major/Spec/Module`,year) %>% 
       summarise(count=n()) %>% 
       group_by(year) %>% 
@@ -226,12 +237,15 @@ server <- function(input, output, session) {
       geom_bar(stat="identity", position = "stack") +
       #scale_y_continuous(labels = scales::percent()) +
       #geom_text(aes(label=count, color=`Owner of Major/Spec/Module`), position = position_fill(width = 0.9, preserve = "single")) +
-      geom_text(aes(label=if_else(count/sum_count<0.016, "", paste0(round(count*100/sum_count,0),"%"))), position = position_stack(vjust=.5), size = 4, color="black", alpha=0.8) +
+      geom_text(aes(label=if_else(count/sum_count<0.016, "", paste0(round(count*100/sum_count,0),"%"))), position = position_stack(vjust=.5), size = 3, color="black", alpha=0.8) +
       guides(color=FALSE) +
       ggtitle("Faculty split percentage") +
       theme_minimal() + 
+      theme(legend.title = element_blank(), legend.text = element_text(size=7)) +
       scale_fill_tableau("Classic 20") + scale_colour_tableau() +
       labs(x="", y="")
+    ggplotly(p) %>% 
+      layout(legend = list(size= 2))
   })
   
   # Programme
@@ -340,13 +354,6 @@ server <- function(input, output, session) {
         select(ID, year, programme, `Plan Description`, `Owner of Major/Spec/Module`) %>%
         group_by(`Plan Description`, year, programme ,`Owner of Major/Spec/Module`) %>%
         summarise(count=n(), ymin=min(count), ymax=max(count)) %>%
-        #ggplot(aes(x=reorder(`Plan Description`, count), y=count, label=count, fill=factor(year), colour=factor(year))) +
-        #geom_bar(position = position_dodge2(width = 0.1, preserve = "single"), stat = "identity" ) +
-        #geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-        #ggplot(aes(x=reorder(`Plan Description`, count), xend=reorder(`Plan Description`, count), y =count, ymin=0, ymax=count, label=count, fill=factor(year), colour=factor(year))) +
-        #geom_linerange(position = position_dodge2(width = 1)) +
-        # geom_point(position = position_dodge2(width = 1), size=4, alpha=0.6) +
-        # geom_text(hjust=0, nudge_y = 1.5) +
         group_by(`Plan Description`, programme ,`Owner of Major/Spec/Module`) %>%
         mutate(ymin=min(count), ymax=max(count)) %>% 
         ggplot(aes(x=reorder(`Plan Description`, count), xend=reorder(`Plan Description`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
@@ -482,6 +489,219 @@ server <- function(input, output, session) {
   })
   
   output$programmeIwiPlot <- renderPlot({
+    generalPlot_df() %>% 
+      select(ID, year, programme, `Descr`) %>% 
+      distinct() %>% # Avoid doublecounting conjoints
+      group_by(`Descr`, year, programme) %>% 
+      summarise(count=n()) %>% 
+      filter(!`Descr` == "NA") %>% 
+      ggplot(aes(x=reorder(`Descr`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      facet_wrap(programme~., ncol=3) +
+      ggtitle("Iwi") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  ## Velocity Dashboard
+  ## Programme Dashboard
+  output$velocityUniquePlot <- renderPlot({
+    overviewPlot_df() %>% 
+      select(ID,year, programme) %>%
+      distinct() %>% 
+      group_by(year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=factor(year),y=count, label=count)) +
+      facet_wrap(programme~.) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      ggtitle("Unique participants by year") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(panel.background = element_rect(fill="grey99", colour="grey99"))
+    #scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$velocityRepeatPlot <- renderPlot({
+    overviewPlot_df() %>% 
+      select(ID,year, programme) %>%
+      distinct() %>% # Avoid conjoint students appear twice
+      arrange(year) %>% 
+      group_by(ID, programme) %>%
+      filter(row_number()>1) %>% # Returning students
+      ungroup() %>% 
+      group_by(year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=factor(year),y=count, label=count)) +
+      facet_wrap(programme~.) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      ggtitle("Repeat participants by year") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(panel.background = element_rect(fill="grey99", colour="grey99"))
+    #scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$velocityFacultyPlot <- renderPlot({
+    generalPlot_df() %>% 
+      select(ID, year, programme, `Owner of Major/Spec/Module`) %>% 
+      distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
+      group_by(`Owner of Major/Spec/Module`, year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=reorder(`Owner of Major/Spec/Module`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      #coord_flip() +
+      facet_wrap(programme~., ncol=3) +
+      ggtitle("Faculty") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$velocityDepartmentPlot <- renderPlotly({
+    if (length(input$baseYear)>1) {
+      generalPlot_df() %>%
+        filter(`Owner of Major/Spec/Module` %in% input$velocityFacultyDepartment) %>% # Filter selected faculties
+        select(ID, year, programme, `Plan Description`, `Owner of Major/Spec/Module`) %>%
+        group_by(`Plan Description`, year, programme ,`Owner of Major/Spec/Module`) %>%
+        summarise(count=n(), ymin=min(count), ymax=max(count)) %>%
+        group_by(`Plan Description`, programme ,`Owner of Major/Spec/Module`) %>%
+        mutate(ymin=min(count), ymax=max(count)) %>% 
+        ggplot(aes(x=reorder(`Plan Description`, count), xend=reorder(`Plan Description`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
+        geom_segment(aes(y=ymin, yend=ymax), color="grey") +
+        geom_point(size=4, alpha=1) +
+        #geom_text(hjust=0, nudge_y = 1.5) +
+        geom_text(color="white", size=2) +
+        coord_flip() +
+        facet_grid(`Owner of Major/Spec/Module` ~ programme,  scales = "free_y", space = "free_y") +
+        ggtitle("Department") +
+        theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
+        scale_fill_tableau() + scale_colour_tableau()
+    }
+    else {
+      generalPlot_df() %>%
+        filter(`Owner of Major/Spec/Module` %in% input$velocityFacultyDepartment) %>% # Filter selected faculties
+        select(ID, year, programme, `Plan Description`, `Owner of Major/Spec/Module`) %>%
+        group_by(`Plan Description`, year, programme ,`Owner of Major/Spec/Module`) %>%
+        summarise(count=n()) %>% 
+        ggplot(aes(x=reorder(`Plan Description`, count), xend=reorder(`Plan Description`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
+        geom_segment(aes(y=0)) +
+        geom_point(size=2, alpha=.9) +
+        geom_text(hjust=0, nudge_y=2.5, size=3) +
+        coord_flip() +
+        facet_grid(`Owner of Major/Spec/Module` ~ programme,  scales = "free_y", space = "free_y") +
+        ggtitle("Department") +
+        theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
+        scale_fill_tableau() + scale_colour_tableau()
+    }
+  })
+  
+  output$velocityAffiliationPlot <- renderPlot({
+    generalPlot_df() %>% 
+      select(ID, year, programme, `Programme Level`) %>% 
+      distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
+      group_by(`Programme Level`, year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=reorder(`Programme Level`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      #coord_flip() +
+      facet_wrap(programme~., ncol=3) +
+      ggtitle("Affiliation") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$velocityDegreePlot <- renderPlotly({
+    if (length(input$baseYear)>1) {
+      generalPlot_df() %>%
+        filter(`Programme Level` %in% input$velocityAffiliationDegree) %>% # Filter selected
+        select(ID, year, programme, `Descriptio`, `Programme Level`) %>%
+        group_by(year, programme ,`Descriptio`, `Programme Level`) %>%
+        summarise(count=n(), ymin=min(count), ymax=max(count)) %>%
+        group_by(programme , `Descriptio`, `Programme Level`) %>%
+        mutate(ymin=min(count), ymax=max(count)) %>% 
+        ggplot(aes(x=reorder(`Descriptio`, count), xend=reorder(`Descriptio`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
+        geom_segment(aes(y=ymin, yend=ymax), color="grey") +
+        geom_point(size=4, alpha=1) +
+        geom_text(color="white", size=2) +
+        coord_flip() +
+        facet_grid(`Programme Level` ~ programme,  scales = "free_y", space = "free_y") +
+        ggtitle("Degree") +
+        theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
+        scale_fill_tableau() + scale_colour_tableau()
+    }
+    else {
+      generalPlot_df() %>%
+        filter(`Programme Level` %in% input$velocityAffiliationDegree) %>% # Filter selected
+        select(ID, year, programme, `Descriptio`, `Programme Level`) %>%
+        group_by(year, programme ,`Descriptio`, `Programme Level`) %>%
+        summarise(count=n()) %>%
+        ggplot(aes(x=reorder(`Descriptio`, count), xend=reorder(`Descriptio`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
+        geom_segment(aes(y=0)) +
+        geom_point(size=2, alpha=.9) +
+        geom_text(hjust=0, nudge_y=2.5, size=3) +
+        coord_flip() +
+        facet_grid(`Programme Level` ~ programme,  scales = "free_y", space = "free_y") +
+        ggtitle("Degree") +
+        theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
+        scale_fill_tableau() + scale_colour_tableau()
+    }
+  })
+  
+  output$velocityGenderPlot <- renderPlot({
+    generalPlot_df() %>% 
+      select(ID, year, programme, `Sex`) %>% 
+      distinct() %>% # Avoid doublecounting conjoints
+      group_by(`Sex`, year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=reorder(`Sex`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      facet_wrap(programme~., ncol=3) +
+      ggtitle("Gender") +
+      theme_minimal() + 
+      theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+      guides(colour=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$velocityEthinicityPlot <- renderPlot({
+    generalPlot_df() %>% 
+      select(ID, year, programme, `Ethnic Group`) %>% 
+      distinct() %>% # Avoid doublecounting conjoints
+      group_by(`Ethnic Group`, year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=reorder(`Ethnic Group`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      facet_wrap(programme~., ncol=3) +
+      ggtitle("Ethinic group") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$velocityResidencyPlot <- renderPlot({
+    generalPlot_df() %>% 
+      select(ID, year, programme, `Residency Status`) %>% 
+      distinct() %>% # Avoid doublecounting conjoints
+      group_by(`Residency Status`, year, programme) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=reorder(`Residency Status`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      facet_wrap(programme~., ncol=3) +
+      ggtitle("Residency status") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$velocityIwiPlot <- renderPlot({
     generalPlot_df() %>% 
       select(ID, year, programme, `Descr`) %>% 
       distinct() %>% # Avoid doublecounting conjoints
