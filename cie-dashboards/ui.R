@@ -310,8 +310,94 @@ ui <- dashboardPage(
 
        # Unleash Space
        tabItem(
-         tabName = "unleash",
-         h2("Unleash Space")
+               tabName = "unleash",
+               
+               # Overview chart
+               fluidRow(
+                 column(6,
+                        tabItem(tabName="unleash", width=NULL,
+                                plotOutput("unleashUniquePlot", height = "300px"))
+                 ),
+                 column(6,
+                        tabItem(tabName="unleash", width=NULL,
+                                plotOutput("unleashRepeatPlot", height = "300px"))
+                 )
+               ),
+               
+               # Faculty split
+               h3(""),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="unleash", width=NULL,
+                                plotOutput("unleashFacultyPlot", height = "600px"))
+                 )
+               ),
+               
+               # Department split
+               pickerInput(
+                 "unleashFacultyDepartment",
+                 "Faculty",
+                 selected="Engineering",
+                 choices = sort(unique(availProg$`Owner of Major/Spec/Module`)),
+                 options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
+                 multiple = T
+               ),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="unleash", width=NULL,
+                                plotlyOutput("unleashDepartmentPlot", height="800px"))
+                 )
+               ),
+               
+               # Affiliation Split
+               h3(""),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="unleash", width=NULL,
+                                plotOutput("unleashAffiliationPlot", height = "600px"))
+                 )
+               ),
+               # Degree split
+               pickerInput(
+                 "unleashAffiliationDegree",
+                 "Affiliation",
+                 selected="Undergraduate",
+                 choices = sort(unique(availProg$`Programme Level`)),
+                 options = list(`actions-box` = TRUE, placeholder="Select affiliation..."),
+                 multiple = T
+               ),
+               fluidRow(
+                 column(12,
+                        tabItem(tabName="unleash", width=NULL,
+                                plotlyOutput("unleashDegreePlot", height="1000px"))
+                 )
+               ),
+               
+               # Gender and Ethinicity Plot
+               h3(""),
+               fluidRow(
+                 column(6,
+                        tabItem(tabName="unleash", width=NULL,
+                                plotOutput("unleashGenderPlot", height = "400px"))
+                 ),
+                 column(6,
+                        tabItem(tabName="unleash", width=NULL,
+                                plotOutput("unleashEthinicityPlot", height = "400px"))
+                 )
+               ),
+               
+               # Iwi and Residency Plot
+               h3(""),
+               fluidRow(
+                 column(6,
+                        tabItem(tabName="unleash", width=NULL,
+                                plotOutput("unleashResidencyPlot", height = "400px"))
+                 ),
+                 column(6,
+                        tabItem(tabName="unleash", width=NULL,
+                                plotOutput("unleashIwiPlot", height = "400px"))
+                 )
+               )
        ),
 
        # Create and Maker Space
