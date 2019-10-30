@@ -42,6 +42,7 @@ ui <- dashboardPage(
         menuItem("Velocity", tabName = "velocity", icon = icon("fas fa-square")),
         menuItem("Unleash Space", tabName = "unleash", icon = icon("fas fa-square")),
         menuItem("Create and Maker Space", tabName = "createmaker", icon = icon("fas fa-square")),
+        
 
         # Sidebar Inputs
         pickerInput(
@@ -70,15 +71,6 @@ ui <- dashboardPage(
        # Overview
        tabItem(
          tabName = "overview",
-         #h4("Overview"),
-         
-         # # Info boxes
-         # fluidRow(
-         #  infoBoxOutput("totalParticipant",width=3),
-         #  infoBoxOutput("uniqueParticipant",width=3),
-         #  infoBoxOutput("repeatParticipant",width=3),
-         #  infoBoxOutput("onetimeParticipant",width=3)
-         # ),
          
          # Overview chart
          fluidRow(
@@ -101,27 +93,26 @@ ui <- dashboardPage(
          # Faculty split overall
          h4("Faculty split"),
          fluidRow(
-            column(8,
-                   plotOutput("facultyN", height = "800px")
-            ),
-            column(4,
-                   plotlyOutput("facultyNPercentage", height = "800px"))
+                  column(8,
+                         plotOutput("facultyN", height = "800px")
+                  ),
+                  column(4,
+                         plotlyOutput("facultyNPercentage", height = "800px"))
 
          ),
          # Faculty split by programme
          h4("Programme split by faculty"),
          fluidRow(
                  column(12,
-                        plotlyOutput("programmeSplitFaculty", height="800px")
-                 )     
-         ),
-         # Table
-         #h4("Data table"),
-         fluidRow(
-           column(12,
-                  dataTableOutput("table")
-            )
+                        plotlyOutput("programmeSplitFaculty", height="800px"))     
          )
+         # # Table
+         # #h4("Data table"),
+         # fluidRow(
+         #   column(12,
+         #          dataTableOutput("table")
+         #    )
+         # )
        ),
 
        # Programme
@@ -491,6 +482,8 @@ ui <- dashboardPage(
                  )
                )
        )
+      
+       # End of tabItem
      )
    )
 )
