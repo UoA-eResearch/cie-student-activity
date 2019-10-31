@@ -74,16 +74,19 @@ process_write <- function(data_dir, backup_dir) {
   return("Success!")
 }
 
-
 # Load SSO
 load_sso <- function(data_dir) {
   # Gather file paths
   years <- list.files(data_dir, pattern = "\\d+")
   files <- dir(file.path(data_dir, years), pattern = "From.*xlsx", full.names = TRUE)
   
+  # Get column types
+  c <- sapply(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = "Student", skip = 1), class)
+  c["Birthdate"] <- "POSIXct"
+  
   # Read and clean
   student <- tibble(updated = years, filename = files) %>% 
-    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2))) %>% 
+    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
     unnest() %>% 
     select(-filename)
   
