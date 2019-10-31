@@ -11,10 +11,12 @@ library(tidyverse)
 library(readxl)
 library(xlsx)
 library(dplyr)
+library(plyr)
 # library(plotly)
 library(DT)
 library(tools)
 # library(shinyWidgets)
+source("functions.R")
 data_dir <- "../data"
 backup_dir <- "../backup_data"
 #tags_dir <- "../ta"
@@ -57,7 +59,13 @@ ui <- fluidPage(
                         tags$li(tags$sub("SSO excel files must contain 'Student' Sheet")),
                         tags$li(tags$sub("CRM excel files must contain 'contacts' Sheet")),
                         tags$li(tags$sub("TAGS excel files must contain 'Tags' Sheet")),
-                        tags$br()
+                        tags$br(),
+                        
+                        # Horizontal line ----
+                        tags$hr(),
+                        
+                        # Status
+                        verbatimTextOutput("status")
                 ),
                 
                 # Main panel for displaying outputs ----
@@ -105,11 +113,24 @@ server <- function(input, output) {
                         # Import From.*xlsx
                         else if ("Student" %in% excel_sheets(uploadPath) && input$saveType == "From Rachel - ") {
                                 df <- read_excel(uploadPath, sheet="Student", skip = 1)
+                                
+                                # Add column names row
+                                cols <- as.data.frame(t(colnames(df)))
+                                colnames(cols) <- colnames(df)
+                                df <- rbind.fill(cols, df)
+                                # Add an empty row
+                                df <- add_row(df, .before = 1)
                         }
                         else if ("contacts" %in% excel_sheets(uploadPath) && input$saveType == "Original - ") {
                                 df  <- read_excel(uploadPath)
                         }
                 }
+                
+                # Change to dafa.frame
+                df <- as.data.frame(df)
+                
+                
+                
                 return(df)
         })
 
@@ -179,20 +200,26 @@ server <- function(input, output) {
                         if (input$saveType == "tags_selection -") {
                           
                           # Save tag files
-                          write.xlsx2(data(), file=file.path(data_dir, "tags", saveName()))
+                          write.xlsx2(data(), file=file.path(data_dir, "tags", saveName()), sheetName = "Tags", row.names = FALSE)
                           
-                        } else {
+                        } else if (input$saveType == "From Rachel - ") {
                           
                           # Save .xlsx data files
-                          write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()))
+                          write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "Student", row.names = FALSE, col.names = FALSE)
+                          
+                        } else if (input$saveType == "Original - ") {
+                          
+                          # Save .xlsx data files
+                          write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "contacts", row.names = FALSE)
                           
                         }
                 }
                 
                 # run the data management script functions
-                
+                status <- process_write(data_dir, backup_dir)
                 
                 # print output messsage
+                output$status <- renderPrint({status})
         })
         
 }
