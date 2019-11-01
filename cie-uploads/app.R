@@ -190,30 +190,38 @@ server <- function(input, output) {
                 #remove previous data from data directories
                 file.remove(checkDir)
                 
-                # save uploaded files to data and backup data directories
-                if (file_ext(uploadPath) == "csv") {
-                        # Save .csv data files
-                        write.csv(data(), file = file.path(data_dir, input$saveYear, saveName()), row.names = FALSE, quote = TRUE)
-                  
-                } else if (file_ext(uploadPath) == "xlsx") {
-                  
-                        if (input$saveType == "tags_selection -") {
-                          
-                          # Save tag files
-                          write.xlsx2(data(), file=file.path(data_dir, "tags", saveName()), sheetName = "Tags", row.names = FALSE)
-                          
-                        } else if (input$saveType == "From Rachel - ") {
-                          
-                          # Save .xlsx data files
-                          write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "Student", row.names = FALSE, col.names = FALSE)
-                          
-                        } else if (input$saveType == "Original - ") {
-                          
-                          # Save .xlsx data files
-                          write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "contacts", row.names = FALSE)
-                          
-                        }
-                }
+                withProgress(message = "Save uploaded file to server", style = "notification", value = 0.1, {
+                  # save uploaded files to data and backup data directories
+                  if (file_ext(uploadPath) == "csv") {
+                    incProgress(.4)
+                    Sys.sleep(.1)
+                    # Save .csv data files
+                    write.csv(data(), file = file.path(data_dir, input$saveYear, saveName()), row.names = FALSE, quote = TRUE)
+                    
+                  } else if (file_ext(uploadPath) == "xlsx") {
+                    incProgress(.4)
+                    Sys.sleep(.1)
+                    if (input$saveType == "tags_selection -") {
+                      
+                      # Save tag files
+                      write.xlsx2(data(), file=file.path(data_dir, "tags", saveName()), sheetName = "Tags", row.names = FALSE)
+                      
+                    } else if (input$saveType == "From Rachel - ") {
+                      
+                      # Save .xlsx data files
+                      write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "Student", row.names = FALSE, col.names = FALSE)
+                      
+                    } else if (input$saveType == "Original - ") {
+                      
+                      # Save .xlsx data files
+                      write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "contacts", row.names = FALSE)
+                    }
+                  }
+                  incProgress(.4)
+                  Sys.sleep(.1)
+                })
+                
+                
                 
                 # run the data management script functions
                 status <- process_write(data_dir, backup_dir)

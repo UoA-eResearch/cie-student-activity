@@ -137,7 +137,7 @@ load_crm <- function(data_dir) {
 # Load TAG
 load_tag <- function(data_dir) {
   # Gather file paths
-  file <-  dir(file.path(data_dir,"tags"), pattern="tags.*", full.names = TRUE)
+  file <-  dir(file.path(data_dir,"tags"), pattern="tags.*xlsx", full.names = TRUE)
   
   # Read data
   if (file_ext(basename(file)) == "csv") {
