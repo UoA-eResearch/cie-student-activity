@@ -27,7 +27,7 @@ process_write <- function(data_dir, backup_dir) {
     
     # Load TAG
     withProgress(message = "Loading CRM data", style=style, value =.5, {
-      selection <- load_tag(data_dir)
+      selection <- load_tag(data_dir, backup_dir)
       incProgress(.4)
     })
     incProgress(.2)
@@ -79,20 +79,37 @@ load_sso <- function(data_dir) {
   # Gather file paths
   years <- list.files(data_dir, pattern = "\\d+")
   files <- dir(file.path(data_dir, years), pattern = "From.*xlsx", full.names = TRUE)
+  #years <- basename(dirname(files))
   
   # Get column types
   c <- sapply(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = "Student", skip = 1), class)
   c["Birthdate"] <- "POSIXct"
+  colNames <- colnames(read.xlsx2("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheetName = "Student", startRow = 2))
   
   # Read and clean
-  student <- tibble(updated = years, filename = files) %>% 
+  student <- tibble(updated = years[1], filename = files[1]) %>% 
     mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
+    select(-filename) %>% 
     unnest() %>% 
-    select(-filename)
+    distinct() # Remove duplicates
+  files <- files[-1]
+  for (file in files) {
+    studentMock <- tibble(updated = basename(dirname(file)), filename = file) %>% 
+      mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
+      select(-filename) %>% 
+      unnest() %>% 
+      distinct() 
+    student <- student %>% 
+      rbind(studentMock)
+    student <- student[!duplicated(student[,colNames]),] # Remove duplicates
+  }
   
-  # Rename columns
-  #dummyT <- read_excel(files[2], sheet="Student", skip = 1)
-  #colnames(student) <- colnames(dummyT)
+  # student <- tibble(updated = years, filename = files) %>% 
+  #   mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
+  #   select(-filename) %>% 
+  #   unnest() %>% 
+  #   distinct() # Remove duplicates
+    
 
   return(student)
 }
@@ -104,6 +121,9 @@ load_crm <- function(data_dir) {
   years <- list.files(data_dir, pattern = "\\d+")
   filesExcel <- dir(file.path(data_dir, years), pattern="Original.*xlsx", full.names = TRUE)
   filesCsv <- dir(file.path(data_dir, years), pattern="Original.*csv", full.names = TRUE)
+  yearsExcel <- basename(dirname(filesExcel))
+  yearsCsv <- basename(dirname(filesCsv))
+  years <- unique(c(yearsExcel, yearsCsv))
   
   # Read data
   eventExcel <- filesExcel %>% 
@@ -135,7 +155,7 @@ load_crm <- function(data_dir) {
 }
 
 # Load TAG
-load_tag <- function(data_dir) {
+load_tag <- function(data_dir, backup_dir) {
   # Gather file paths
   file <-  dir(file.path(data_dir,"tags"), pattern="tags.*xlsx", full.names = TRUE)
   
@@ -155,6 +175,15 @@ load_tag <- function(data_dir) {
   
   # Rename columns
   colnames(selection) <- c("tags", "final_tags", "dashboards", "overview", "programme", "velocity", "unleash", "createmaker", "curricula", "journey", "date", "comment", "year", "tag_programme")
+  
+  # Back up current tags_selection.csv file
+  checkDir <- dir(file.path(data_dir, "tags"), pattern = paste0("tags_selection", ".*csv"), full.names = TRUE)
+  checkDir2 <- file.path(backup_dir, "tags")
+  file.copy(checkDir, checkDir2, recursive = TRUE)
+  
+  # Export
+  write_csv(selection, file.path(data_dir,"tags", "tags_selection.csv"))
+  write_csv(selection, file.path(backup_dir, "tags", paste0("tags_selection-",Sys.time(),".csv"))) # Another copy for backup
   
   return(selection)
 }

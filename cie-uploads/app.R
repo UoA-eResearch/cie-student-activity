@@ -46,7 +46,7 @@ ui <- fluidPage(
                         selectInput("saveYear", "Select year", choices = 2015:as.numeric(format(Sys.Date(),"%Y"))+1, selected = as.numeric(format(Sys.Date(),"%Y"))),
                         
                         # Type
-                        radioButtons("saveType", "Select type of file", choices = c("None", "SSO" = "From Rachel - ", "CRM" = "Original - ", "TAG" = "tags_selection -")),
+                        radioButtons("saveType", "Select type of file", choices = c("None", "SSO" = "From Rachel - ", "CRM" = "Original - ", "TAG" = "tags-selection")),
                         
                         # Save Button ----
                         actionButton("save", "Save"),
@@ -107,7 +107,7 @@ server <- function(input, output) {
                 } else if (file_ext(uploadPath) == "xlsx") {
                         
                         # Import tags_selection.xlsx
-                        if (input$saveType == "tags_selection" && "Tags" %in% excel_sheets(uploadPath)) {
+                        if (input$saveType == "tags-selection" && "Tags" %in% excel_sheets(uploadPath)) {
                                 df <- read_excel(uploadPath, sheet = "Tags")
                         }
                         # Import From.*xlsx
@@ -162,7 +162,9 @@ server <- function(input, output) {
         })
         
         #output$value <- renderPrint( {input$saveType})
-        output$saveFileName <- renderPrint({saveName()})
+        output$saveFileName <- renderPrint({
+                saveName()
+                })
         #output$saveFileName <- renderPrint(file.exists(file.path(data_dir,input$saveYear)))
 
         observeEvent(input$save, {
@@ -178,13 +180,14 @@ server <- function(input, output) {
                 }
                 
                 # Copy overwrite previous data to backup directory
-                if (input$saveType == "tags_selection - ") {
+                if (input$saveType == "tags-selection") {
                   checkDir <- dir(file.path(data_dir, "tags"), pattern = paste0(input$saveType, ".*"), full.names = TRUE)
                   checkDir2 <- file.path(backup_dir, "tags")
                 } else {
                   checkDir <- dir(file.path(data_dir, input$saveYear), pattern = paste0(input$saveType, ".*"), full.names = TRUE)
                   checkDir2 <- file.path(backup_dir, input$saveYear)
                 }
+                
                 file.copy(checkDir, checkDir2, recursive = TRUE)
                 
                 #remove previous data from data directories
@@ -201,7 +204,7 @@ server <- function(input, output) {
                   } else if (file_ext(uploadPath) == "xlsx") {
                     incProgress(.4)
                     Sys.sleep(.1)
-                    if (input$saveType == "tags_selection -") {
+                    if (input$saveType == "tags-selection") {
                       
                       # Save tag files
                       write.xlsx2(data(), file=file.path(data_dir, "tags", saveName()), sheetName = "Tags", row.names = FALSE)
@@ -220,8 +223,6 @@ server <- function(input, output) {
                   incProgress(.4)
                   Sys.sleep(.1)
                 })
-                
-                
                 
                 # run the data management script functions
                 status <- process_write(data_dir, backup_dir)
