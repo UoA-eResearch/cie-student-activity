@@ -91,6 +91,9 @@ load_sso <- function(data_dir) {
     mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
     select(-filename) %>% 
     unnest() %>% 
+    group_by(ID) %>%
+    filter(`Admit.Term`==max(as.numeric(as.character(`Admit.Term`)))) %>% # Only select most recent updates
+    ungroup() %>%
     distinct() # Remove duplicates
   files <- files[-1]
   for (file in files) {
@@ -98,6 +101,9 @@ load_sso <- function(data_dir) {
       mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
       select(-filename) %>% 
       unnest() %>% 
+      group_by(ID) %>%
+      filter(`Admit.Term`==max(as.numeric(as.character(`Admit.Term`)))) %>% # Only select most recent updates
+      ungroup() %>%
       distinct() 
     student <- student %>% 
       rbind(studentMock)
