@@ -50,6 +50,7 @@ ui <- fluidPage(
                         
                         # Save Button ----
                         actionButton("save", "Save"),
+                        actionButton("reload", "Reload"),
                         
                         # Horizontal line ----
                         tags$hr(),
@@ -87,10 +88,7 @@ server <- function(input, output) {
         data <- reactive({
                 # Error messages
                 validate(
-                        #need(input$saveName != "" && (grepl("From",input$saveName, fixed = TRUE) || grepl("Original",input$saveName, fixed =TRUE)), message="Please enter a valid filename"),
-                        #need(!file.exists(file.path("data", input$saveYear, input$saveName)), message = "File already exists"),
                         need(input$saveYear != "", message="Please select valid year"),
-                        #need(input$uploadFile$datapath != "", message="Please select files to upload"),
                         need(input$saveType != "None", message = "Please select file type")
                         
                 )
@@ -112,7 +110,10 @@ server <- function(input, output) {
                         }
                         # Import From.*xlsx
                         else if ("Student" %in% excel_sheets(uploadPath) && input$saveType == "From Rachel - ") {
-                                df <- read_excel(uploadPath, sheet="Student", skip = 1)
+                                # Get column types
+                                c <- sapply(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = "Student", skip = 1), class)
+                                c["Birthdate"] <- "POSIXct"
+                                df <- read.xlsx2(uploadPath, sheetName="Student", startRow = 2)
                                 
                                 # Add column names row
                                 cols <- as.data.frame(t(colnames(df)))
@@ -224,6 +225,14 @@ server <- function(input, output) {
                   Sys.sleep(.1)
                 })
                 
+                # run the data management script functions
+                status <- process_write(data_dir, backup_dir)
+                
+                # print output messsage
+                output$status <- renderPrint({status})
+        })
+        
+        observeEvent(input$reload, {
                 # run the data management script functions
                 status <- process_write(data_dir, backup_dir)
                 

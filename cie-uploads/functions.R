@@ -85,6 +85,7 @@ load_sso <- function(data_dir) {
   c <- sapply(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = "Student", skip = 1), class)
   c["Birthdate"] <- "POSIXct"
   colNames <- colnames(read.xlsx2("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheetName = "Student", startRow = 2))
+  colNames <- colNames[-3]
   
   # Read and clean
   student <- tibble(updated = years[1], filename = files[1]) %>% 
@@ -108,15 +109,13 @@ load_sso <- function(data_dir) {
     student <- student %>% 
       rbind(studentMock)
     student <- student[!duplicated(student[,colNames]),] # Remove duplicates
+    
   }
   
-  # student <- tibble(updated = years, filename = files) %>% 
-  #   mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
-  #   select(-filename) %>% 
-  #   unnest() %>% 
-  #   distinct() # Remove duplicates
-    
-
+  # Remove Birthdate columns
+  student <- student %>% 
+    select(-`Birthdate`)
+  
   return(student)
 }
 
