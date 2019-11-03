@@ -84,8 +84,8 @@ load_sso <- function(data_dir) {
   # Get column types
   c <- sapply(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = "Student", skip = 1), class)
   c["Birthdate"] <- "POSIXct"
-  colNames <- colnames(read.xlsx2("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheetName = "Student", startRow = 2))
-  colNames <- colNames[-3]
+  #colNames <- colnames(read.xlsx2("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheetName = "Student", startRow = 2))
+  #colNames <- colNames[-3]
   
   # Read and clean
   student <- tibble(updated = years[1], filename = files[1]) %>% 
@@ -97,6 +97,9 @@ load_sso <- function(data_dir) {
     ungroup() %>%
     distinct() # Remove duplicates
   files <- files[-1]
+  colNames <- colnames(student)
+  colNames  <- colNames[-4]
+  
   for (file in files) {
     studentMock <- tibble(updated = basename(dirname(file)), filename = file) %>% 
       mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
@@ -109,7 +112,6 @@ load_sso <- function(data_dir) {
     student <- student %>% 
       rbind(studentMock)
     student <- student[!duplicated(student[,colNames]),] # Remove duplicates
-    
   }
   
   # Remove Birthdate columns
@@ -152,7 +154,8 @@ load_crm <- function(data_dir) {
   partProg <- studentEvent$Tags %>% 
     strsplit(., ",") %>% 
     setNames(studentEvent$`UoA ID`) %>% 
-    melt(value.name = "programme")
+    melt(value.name = "programme") %>% 
+    distinct() # Remove any duplicates
   
   colnames(partProg) <- c("programme", "ID")
   

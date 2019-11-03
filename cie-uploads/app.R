@@ -109,11 +109,17 @@ server <- function(input, output) {
                                 df <- read_excel(uploadPath, sheet = "Tags")
                         }
                         # Import From.*xlsx
-                        else if ("Student" %in% excel_sheets(uploadPath) && input$saveType == "From Rachel - ") {
+                        else if (("Student" %in% excel_sheets(uploadPath) || "Students" %in% excel_sheets(uploadPath))  && input$saveType == "From Rachel - ") {
                                 # Get column types
                                 c <- sapply(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = "Student", skip = 1), class)
                                 c["Birthdate"] <- "POSIXct"
-                                df <- read.xlsx2(uploadPath, sheetName="Student", startRow = 2)
+                                if ("Student" %in% excel_sheets(uploadPath)) {
+                                        df <- read.xlsx2(uploadPath, sheetName="Student", startRow = 2)
+                                }
+                                else {
+                                        df <- read.xlsx2(uploadPath, sheetName="Students", startRow = 2)       
+                                }
+                                
                                 
                                 # Add column names row
                                 cols <- as.data.frame(t(colnames(df)))
