@@ -6,6 +6,22 @@ library(tidyr)
 library(xlsx)
 library(reshape2)
 
+## Replacements
+facultyRename <- tibble(
+  oldFaculty = c("Faculty of Business & Economic", "Faculty of Science", "Faculty of Arts", "Faculty of Law", "Faculty of Education", 
+                 "Faculty of Engineering", "Faculty Creative Arts & Indust", "Faculty of Medical & Hlth Sci",
+                 "Medical & Health Sciences", "Science", "Business & Economics", "Engineering", "Creative Arts & Industries", "Arts",
+                 "Law", "The University of Auckland", "Education & Social Work", "Auck Bioengineering Institute", "Bioengineering Institute", "New Start",
+                 "Centre for Cont Education", "Theology"
+                 ),
+  newFaculty = c("Business & Economics", "Science", "Arts", "Law", "Education & Social Work",
+                 "Engineering", "Creative Arts & Industries", "Medical & Health Sciences",
+                 "Medical & Health Sciences", "Science", "Business & Economics", "Engineering", "Creative Arts & Industries", "Arts",
+                 "Law", "The University of Auckland", "Education & Social Work", "Auck Bioengineering Institute", "Bioengineering Institute", "New Start",
+                 "Centre for Cont Education", "Theology"
+                 )
+)
+
 ## Functions
 # Process all data files and write to "all.csv"
 process_write <- function(data_dir, backup_dir) {
@@ -96,6 +112,7 @@ load_sso <- function(data_dir) {
     filter(`Admit.Term`==max(as.numeric(as.character(`Admit.Term`)))) %>% # Only select most recent updates
     ungroup() %>%
     distinct() # Remove duplicates
+  student$Owner.of.Major.Spec.Module <- facultyRename$newFaculty[match(student$Owner.of.Major.Spec.Module, facultyRename$oldFaculty)]
   files <- files[-1]
   colNames <- colnames(student)
   colNames  <- colNames[-4]
