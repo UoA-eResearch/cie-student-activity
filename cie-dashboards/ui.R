@@ -16,8 +16,8 @@ library(DT)
 library(shinyWidgets)
 
 # Import data
-allData <- read_csv("data/all.csv")
-selection <- read_csv("data/tags_selection.csv")
+allData <- read_csv("../data/all.csv")
+selection <- read_csv("../data/tags/tags_selection.csv")
 availProg <- selection %>% 
         filter(selection[,5] == "Y") %>% 
         select(tag_programme)
@@ -145,7 +145,7 @@ ui <- dashboardPage(
                  "programmeFacultyDepartment",
                  "Faculty",
                  selected="Engineering",
-                 choices = sort(unique(availProg$`Owner of Major/Spec/Module`)),
+                 choices = sort(unique(availProg$`Owner.of.Major.Spec.Module`)),
                  options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
                  multiple = T
                ),
@@ -169,7 +169,7 @@ ui <- dashboardPage(
                  "programmeAffiliationDegree",
                  "Affiliation",
                  selected="Undergraduate",
-                 choices = sort(unique(availProg$`Programme Level`)),
+                 choices = sort(unique(availProg$`Programme.Level`)),
                  options = list(`actions-box` = TRUE, placeholder="Select affiliation..."),
                  multiple = T
                ),
@@ -237,7 +237,7 @@ ui <- dashboardPage(
                  "velocityFacultyDepartment",
                  "Faculty",
                  selected="Engineering",
-                 choices = sort(unique(availProg$`Owner of Major/Spec/Module`)),
+                 choices = sort(unique(availProg$`Owner.of.Major.Spec.Module`)),
                  options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
                  multiple = T
                ),
@@ -261,7 +261,7 @@ ui <- dashboardPage(
                  "velocityAffiliationDegree",
                  "Affiliation",
                  selected="Undergraduate",
-                 choices = sort(unique(availProg$`Programme Level`)),
+                 choices = sort(unique(availProg$`Programme.Level`)),
                  options = list(`actions-box` = TRUE, placeholder="Select affiliation..."),
                  multiple = T
                ),
@@ -329,7 +329,7 @@ ui <- dashboardPage(
                  "unleashFacultyDepartment",
                  "Faculty",
                  selected="Engineering",
-                 choices = sort(unique(availProg$`Owner of Major/Spec/Module`)),
+                 choices = sort(unique(availProg$`Owner.of.Major.Spec.Module`)),
                  options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
                  multiple = T
                ),
@@ -353,7 +353,7 @@ ui <- dashboardPage(
                  "unleashAffiliationDegree",
                  "Affiliation",
                  selected="Undergraduate",
-                 choices = sort(unique(availProg$`Programme Level`)),
+                 choices = sort(unique(availProg$`Programme.Level`)),
                  options = list(`actions-box` = TRUE, placeholder="Select affiliation..."),
                  multiple = T
                ),
@@ -421,7 +421,7 @@ ui <- dashboardPage(
                  "createmakerFacultyDepartment",
                  "Faculty",
                  selected="Engineering",
-                 choices = sort(unique(availProg$`Owner of Major/Spec/Module`)),
+                 choices = sort(unique(availProg$`Owner.of.Major.Spec.Module`)),
                  options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
                  multiple = T
                ),
@@ -445,7 +445,7 @@ ui <- dashboardPage(
                  "createmakerAffiliationDegree",
                  "Affiliation",
                  selected="Undergraduate",
-                 choices = sort(unique(availProg$`Programme Level`)),
+                 choices = sort(unique(availProg$`Programme.Level`)),
                  options = list(`actions-box` = TRUE, placeholder="Select affiliation..."),
                  multiple = T
                ),
