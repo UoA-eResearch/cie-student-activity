@@ -42,7 +42,7 @@ process_write <- function(data_dir, backup_dir) {
     incProgress(.2)
     
     # Load TAG
-    withProgress(message = "Loading CRM data", style=style, value =.5, {
+    withProgress(message = "Loading TAG data", style=style, value =.5, {
       selection <- load_tag(data_dir, backup_dir)
       incProgress(.4)
     })
@@ -63,7 +63,7 @@ process_write <- function(data_dir, backup_dir) {
     incProgress(.1)
     
     # Copy old all.csv to backup_dir
-    withProgress(message = "Merging data", style=style, value =.5, {
+    withProgress(message = "Backingup data", style=style, value =.5, {
       allName <- dir(data_dir, pattern = "all.*csv", full.names = TRUE)
       incProgress(.2)
       Sys.sleep(0.2)
@@ -74,7 +74,7 @@ process_write <- function(data_dir, backup_dir) {
     incProgress(.1)
     
     # Export
-    withProgress(message = "Merging data", style=style, value =.5, {
+    withProgress(message = "Uploading data", style=style, value =.5, {
       write_csv(all_df, file.path(data_dir,"all.csv"))
       incProgress(.2)
       Sys.sleep(0.2)
@@ -129,6 +129,7 @@ load_sso <- function(data_dir) {
     student <- student %>% 
       rbind(studentMock)
     student <- student[!duplicated(student[,colNames]),] # Remove duplicates
+    student$Residency.Status[!student$Residency.Status %in% c("International", "New Zealand Citizen", "NZ Permanent Resident")] <- "International" # Change everything should be International to International
   }
   
   # Remove Birthdate columns
