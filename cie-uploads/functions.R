@@ -1,6 +1,7 @@
 # Library
 library(tidyverse)
 library(readxl)
+library(plyr)
 library(dplyr)
 library(tidyr)
 library(xlsx)
@@ -95,15 +96,12 @@ load_sso <- function(data_dir) {
   # Gather file paths
   years <- list.files(data_dir, pattern = "\\d+")
   files <- dir(file.path(data_dir, years), pattern = "From.*xlsx", full.names = TRUE)
-  #years <- basename(dirname(files))
   
+  ##  Student sheet
   # Get column types
   c <- sapply(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = "Student", skip = 1), class)
   c["Birthdate"] <- "POSIXct"
-  #colNames <- colnames(read.xlsx2("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheetName = "Student", startRow = 2))
-  #colNames <- colNames[-3]
-  
-  # Read and clean
+  # Read and clean sheet
   student <- tibble(updated = years[1], filename = files[1]) %>% 
     mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
     select(-filename) %>% 
@@ -116,7 +114,6 @@ load_sso <- function(data_dir) {
   files <- files[-1]
   colNames <- colnames(student)
   colNames  <- colNames[-4]
-  
   for (file in files) {
     studentMock <- tibble(updated = basename(dirname(file)), filename = file) %>% 
       mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
@@ -131,12 +128,33 @@ load_sso <- function(data_dir) {
     student <- student[!duplicated(student[,colNames]),] # Remove duplicates
     student$Residency.Status[!student$Residency.Status %in% c("International", "New Zealand Citizen", "NZ Permanent Resident")] <- "International" # Change everything should be International to International
   }
-  
   # Remove Birthdate columns
   student <- student %>% 
     select(-`Birthdate`)
   
-  return(student)
+  ## Applicant sheet
+  # Get sheets available in excel workbooks
+  availSheet <- lapply(files, excel_sheets)
+  # Get excel workbooks that have "Applicant" sheet
+  isAppl <- lapply(availSheet, function(x) {"Applicant" %in% unlist(x)})
+  isAppl <- files[which(unlist(isAppl))]
+  # Read excel
+  applicant <- tibble(updated = basename(dirname(isAppl)), filename = isAppl) %>% 
+    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Applicant", startRow = 2))) %>% 
+    select(-filename) %>% 
+    unnest() %>% 
+    select(updated, ID, Sex, Age, `Residency.Status`, `Ethnic.Group`, `Ethnicity`, Iwi, Descr, NSN, Descr.1)
+  # Change  column names
+  colnames(applicant)[length(colnames(applicant))] <- "Descriptio"
+  # Set NAs to EXTERNAL
+  newCols <- setdiff(colnames(student), colnames(applicant))
+  applicant[newCols <- "EXTERNAL"]
+  
+  
+  # Merge all sheets data
+  all <- rbind.fill(applicant, student)
+  
+  return(all)
 }
 
 # Load CRM
