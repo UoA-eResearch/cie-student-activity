@@ -161,10 +161,13 @@ server <- function(input, output, session) {
   output$facultyN <- renderPlot({
     facultyPlot_df() %>% 
       group_by(`Owner.of.Major.Spec.Module`,year) %>% 
-      summarise(count=n()) %>% 
+      summarise(count=n()) %>%
+      group_by(year) %>% 
+      mutate(sum_count=sum(count)) %>% 
       ggplot(aes(x=reorder(`Owner.of.Major.Spec.Module`, count), count, fill=factor(year))) +
       geom_bar(stat="identity", position = position_dodge2(width = 0.9, preserve = "single")) +
-      geom_text(aes(label=count, color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), hjust=-0.1) +
+      #geom_text(aes(label=count, color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), hjust=-0.1) +
+      geom_text(aes(label=paste0(count, " (", round(count*100/sum_count,1),"%)"), color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), hjust=-0.1) +
       guides(color=FALSE) +
       coord_flip() +
       ggtitle("Faculty split overall") +
@@ -173,26 +176,26 @@ server <- function(input, output, session) {
       labs(x="", y="")
   })
   
-  output$facultyNPercentage <- renderPlotly({
-    p <- facultyPlot_df() %>% 
-      group_by(`Owner.of.Major.Spec.Module`,year) %>% 
-      summarise(count=n()) %>% 
-      group_by(year) %>% 
-      mutate(sum_count=sum(count)) %>% 
-      ggplot(aes(x=factor(year), y=count, fill=`Owner.of.Major.Spec.Module`, text=paste0(round(count*100/sum_count,0),"%")), alpha=0.5) +
-      geom_bar(stat="identity", position = "stack") +
-      #scale_y_continuous(labels = scales::percent()) +
-      #geom_text(aes(label=count, color=`Owner.of.Major.Spec.Module`), position = position_fill(width = 0.9, preserve = "single")) +
-      geom_text(aes(label=if_else(count/sum_count<0.016, "", paste0(round(count*100/sum_count,0),"%"))), position = position_stack(vjust=.5), size = 3, color="black", alpha=0.8) +
-      guides(color=FALSE) +
-      ggtitle("Faculty split percentage") +
-      theme_minimal() + 
-      theme(legend.title = element_blank(), legend.text = element_text(size=7)) +
-      scale_fill_tableau("Classic 20") + scale_colour_tableau() +
-      labs(x="", y="")
-    ggplotly(p) %>% 
-      layout(legend = list(size= 2))
-  })
+  # output$facultyNPercentage <- renderPlotly({
+  #   p <- facultyPlot_df() %>% 
+  #     group_by(`Owner.of.Major.Spec.Module`,year) %>% 
+  #     summarise(count=n()) %>% 
+  #     group_by(year) %>% 
+  #     mutate(sum_count=sum(count)) %>% 
+  #     ggplot(aes(x=factor(year), y=count, fill=`Owner.of.Major.Spec.Module`, text=paste0(round(count*100/sum_count,0),"%")), alpha=0.5) +
+  #     geom_bar(stat="identity", position = "stack") +
+  #     #scale_y_continuous(labels = scales::percent()) +
+  #     #geom_text(aes(label=count, color=`Owner.of.Major.Spec.Module`), position = position_fill(width = 0.9, preserve = "single")) +
+  #     geom_text(aes(label=if_else(count/sum_count<0.016, "", paste0(round(count*100/sum_count,0),"%"))), position = position_stack(vjust=.5), size = 3, color="black", alpha=0.8) +
+  #     guides(color=FALSE) +
+  #     ggtitle("Faculty split percentage") +
+  #     theme_minimal() + 
+  #     theme(legend.title = element_blank(), legend.text = element_text(size=7)) +
+  #     scale_fill_tableau("Classic 20") + scale_colour_tableau() +
+  #     labs(x="", y="")
+  #   ggplotly(p) %>% 
+  #     layout(legend = list(size= 2))
+  # })
   
   # Programme
   output$programmeN <- renderPlot({
@@ -282,10 +285,12 @@ server <- function(input, output, session) {
       distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
       group_by(`Owner.of.Major.Spec.Module`, year, programme) %>% 
       summarise(count=n()) %>% 
+      group_by(year, programme) %>% 
+      mutate(sum_count=sum(count)) %>% 
       ggplot(aes(x=reorder(`Owner.of.Major.Spec.Module`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-      #coord_flip() +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Faculty") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
@@ -337,10 +342,12 @@ server <- function(input, output, session) {
       distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
       group_by(`Programme.Level`, year, programme) %>% 
       summarise(count=n()) %>% 
+      group_by(year, programme) %>% 
+      mutate(sum_count=sum(count)) %>% 
       ggplot(aes(x=reorder(`Programme.Level`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-      #coord_flip() +
+      geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Affiliation") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
@@ -391,9 +398,13 @@ server <- function(input, output, session) {
       distinct() %>% # Avoid doublecounting conjoints
       group_by(`Sex`, year, programme) %>% 
       summarise(count=n()) %>% 
+      group_by(year, programme) %>% 
+      mutate(sum_count=sum(count)) %>% 
       ggplot(aes(x=reorder(`Sex`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      scale_y_continuous(expand = expand_scale(mult = c(0, .1))) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Gender") +
       theme_minimal() + 
@@ -408,9 +419,13 @@ server <- function(input, output, session) {
       distinct() %>% # Avoid doublecounting conjoints
       group_by(`Ethnicity`, year, programme) %>% 
       summarise(count=n()) %>% 
+      group_by(year, programme) %>% 
+      mutate(sum_count=sum(count)) %>% 
       ggplot(aes(x=reorder(`Ethnicity`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      scale_y_continuous(expand = expand_scale(mult = c(0, .1))) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Ethinic group") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
@@ -424,9 +439,13 @@ server <- function(input, output, session) {
       distinct() %>% # Avoid doublecounting conjoints
       group_by(`Residency.Status`, year, programme) %>% 
       summarise(count=n()) %>% 
+      group_by(year, programme) %>% 
+      mutate(sum_count=sum(count)) %>% 
       ggplot(aes(x=reorder(`Residency.Status`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      scale_y_continuous(expand = expand_scale(mult = c(0, .1))) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Residency.Status") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
@@ -438,12 +457,16 @@ server <- function(input, output, session) {
     generalPlot_df() %>% 
       select(ID, year, programme, `Descr`) %>% 
       distinct() %>% # Avoid doublecounting conjoints
-      group_by(`Descr`, year, programme) %>% 
+      group_by(`Descr`, year, programme) %>%
       summarise(count=n()) %>% 
       filter(!`Descr` == "NA") %>% 
+      group_by(year, programme) %>% 
+      mutate(sum_count=sum(count)) %>%
       ggplot(aes(x=reorder(`Descr`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      scale_y_continuous(expand = expand_scale(mult = c(0, .15))) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Iwi") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +

@@ -17,7 +17,7 @@ library(shinyWidgets)
 
 # Import data
 allData <- read_csv("../data/all.csv")
-selection <- read_csv("../data/tags/tags_selection.csv")
+selection <- read_csv("../data/tags_selection.csv")
 availProg <- selection %>% 
         filter(selection[,5] == "Y") %>% 
         select(tag_programme)
@@ -93,11 +93,11 @@ ui <- dashboardPage(
          # Faculty split overall
          h4("Faculty split"),
          fluidRow(
-                  column(8,
+                  column(12,
                          plotOutput("facultyN", height = "800px")
-                  ),
-                  column(4,
-                         plotlyOutput("facultyNPercentage", height = "800px"))
+                  )
+                  # column(4,
+                  #        plotlyOutput("facultyNPercentage", height = "800px"))
 
          ),
          # Faculty split by programme
@@ -189,18 +189,20 @@ ui <- dashboardPage(
                        ),
                        column(6,
                               tabItem(tabName="programme", width=NULL,
-                                      plotOutput("programmeEthinicityPlot", height = "400px"))
+                                      plotOutput("programmeResidencyPlot", height = "400px"))
                        )
                ),
                
                # Iwi and Residency Plot
                h3(""),
                fluidRow(
-                       column(6,
+                       column(12,
                               tabItem(tabName="programme", width=NULL,
-                                      plotOutput("programmeResidencyPlot", height = "400px"))
-                       ),
-                       column(6,
+                                      plotOutput("programmeEthinicityPlot", height = "400px"))
+                       )),
+               h3(""),
+               fluidRow(
+                       column(12,
                               tabItem(tabName="programme", width=NULL,
                                       plotOutput("programmeIwiPlot", height = "400px"))
                        )
