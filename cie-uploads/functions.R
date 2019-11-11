@@ -96,6 +96,8 @@ load_sso <- function(data_dir) {
   # Gather file paths
   years <- list.files(data_dir, pattern = "\\d+")
   files <- dir(file.path(data_dir, years), pattern = "From.*xlsx", full.names = TRUE)
+  # Get sheets available in excel workbooks
+  availSheet <- lapply(files, excel_sheets)
   
   ##  Student sheet
   # Get column types
@@ -111,10 +113,10 @@ load_sso <- function(data_dir) {
     ungroup() %>%
     distinct() # Remove duplicates
   student$Owner.of.Major.Spec.Module <- facultyRename$newFaculty[match(student$Owner.of.Major.Spec.Module, facultyRename$oldFaculty)]
-  files <- files[-1]
+  isStudent <- files[-1]
   colNames <- colnames(student)
   colNames  <- colNames[-4]
-  for (file in files) {
+  for (file in isStudent) {
     studentMock <- tibble(updated = basename(dirname(file)), filename = file) %>% 
       mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
       select(-filename) %>% 
@@ -133,8 +135,6 @@ load_sso <- function(data_dir) {
     select(-`Birthdate`)
   
   ## Applicant sheet
-  # Get sheets available in excel workbooks
-  availSheet <- lapply(files, excel_sheets)
   # Get excel workbooks that have "Applicant" sheet
   isAppl <- lapply(availSheet, function(x) {"Applicant" %in% unlist(x)})
   isAppl <- files[which(unlist(isAppl))]
@@ -148,11 +148,33 @@ load_sso <- function(data_dir) {
   colnames(applicant)[length(colnames(applicant))] <- "Descriptio"
   # Set NAs to EXTERNAL
   newCols <- setdiff(colnames(student), colnames(applicant))
-  applicant[newCols <- "EXTERNAL"]
+  applicant[newCols] <- "EXTERNAL"
+  
+  ## No Affil sheet
+  # Get excel workbooks that have "No Affil" sheet
+  isAffil <- lapply(availSheet, function(x) {"No Affil" %in% unlist(x)})
+  isAffil <- files[which(unlist(isAffil))]
+  # Read excel
+  affil <- tibble(updated = basename(dirname(isAffil)), filename = isAffil) %>% 
+    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="No Affil", startRow = 2))) %>% 
+    select(-filename) %>% 
+    unnest() %>% 
+    select(updated, ID, Sex, NSN, `Ethnic.grp.description`, `Citizenship.Passport`, `Descr`)
+  # Change  column names
+  colnames(affil)[5:7] <- c("Ethnicity", "Residency.Status", "Ethnic.Group")
+  # Change values
+  affil$Residency.Status[affil$Residency.Status!="NZL"] <- "International"
+  affil$Sex[affil$Sex == "F"] <- "Female"
+  affil$Sex[affil$Sex == "M"] <- "Male"
+  # Set NAs to EXTERNAL
+  newCols <- setdiff(colnames(student), colnames(affil))
+  affil[newCols] <- "EXTERNAL"
   
   
   # Merge all sheets data
-  all <- rbind.fill(applicant, student)
+  all <- rbind(student, applicant)
+  all <- rbind(all, affil)
+  #all <- do.call("rbind", list(student, affil, applicant))
   
   return(all)
 }
