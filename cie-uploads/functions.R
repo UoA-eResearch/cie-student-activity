@@ -80,7 +80,11 @@ process_write <- function(data_dir, backup_dir) {
       incProgress(.2)
       Sys.sleep(0.2)
       write_csv(all_df, file.path(backup_dir, "all", paste0("all-",Sys.time(),".csv")))
-      incProgress(.2)
+      incProgress(.1)
+      Sys.sleep(0.2)
+      # Remove cache on the server
+      system("touch ../cie-dashboards/restart.txt")
+      incProgress(.1)
       Sys.sleep(0.2)
     })
     incProgress(.1)
