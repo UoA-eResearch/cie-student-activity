@@ -105,7 +105,7 @@ load_sso <- function(data_dir) {
   c["Birthdate"] <- "POSIXct"
   # Read and clean sheet
   student <- tibble(updated = years[1], filename = files[1]) %>% 
-    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
+    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c, stringsAsFactors = FALSE))) %>% 
     select(-filename) %>% 
     unnest() %>% 
     group_by(ID) %>%
@@ -118,7 +118,7 @@ load_sso <- function(data_dir) {
   colNames  <- colNames[-4]
   for (file in isStudent) {
     studentMock <- tibble(updated = basename(dirname(file)), filename = file) %>% 
-      mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c))) %>% 
+      mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c, , stringsAsFactors = FALSE))) %>% 
       select(-filename) %>% 
       unnest() %>% 
       group_by(ID) %>%
@@ -133,6 +133,8 @@ load_sso <- function(data_dir) {
   # Remove Birthdate columns
   student <- student %>% 
     select(-`Birthdate`)
+  # Change values for "Alumni"
+  student[which(student$Status == "Completed Programme"),][c('Programme.Level', 'Descriptio', 'Owner.of.Major.Spec.Module')] <- "ALUMNI"
   
   ## Applicant sheet
   # Get excel workbooks that have "Applicant" sheet
