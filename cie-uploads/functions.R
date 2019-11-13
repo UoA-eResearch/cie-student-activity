@@ -83,7 +83,8 @@ process_write <- function(data_dir, backup_dir) {
       incProgress(.1)
       Sys.sleep(0.2)
       # Remove cache on the server
-      system("touch ../cie-dashboards/restart.txt")
+      system("touch ../cie-dashboards/ui.R")
+      system("touch ../cie-dashboards/server.R")
       incProgress(.1)
       Sys.sleep(0.2)
     })
@@ -122,7 +123,7 @@ load_sso <- function(data_dir) {
   colNames  <- colNames[-4]
   for (file in isStudent) {
     studentMock <- tibble(updated = basename(dirname(file)), filename = file) %>% 
-      mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c, , stringsAsFactors = FALSE))) %>% 
+      mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c, stringsAsFactors = FALSE))) %>% 
       select(-filename) %>% 
       unnest() %>% 
       group_by(ID) %>%
@@ -146,7 +147,7 @@ load_sso <- function(data_dir) {
   isAppl <- files[which(unlist(isAppl))]
   # Read excel
   applicant <- tibble(updated = basename(dirname(isAppl)), filename = isAppl) %>% 
-    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Applicant", startRow = 2))) %>% 
+    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Applicant", startRow = 2, stringsAsFactors = FALSE))) %>% 
     select(-filename) %>% 
     unnest() %>% 
     select(updated, ID, Sex, Age, `Residency.Status`, `Ethnic.Group`, `Ethnicity`, Iwi, Descr, NSN, Descr.1)
@@ -162,7 +163,7 @@ load_sso <- function(data_dir) {
   isAffil <- files[which(unlist(isAffil))]
   # Read excel
   affil <- tibble(updated = basename(dirname(isAffil)), filename = isAffil) %>% 
-    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="No Affil", startRow = 2))) %>% 
+    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="No Affil", startRow = 2,  stringsAsFactors = FALSE))) %>% 
     select(-filename) %>% 
     unnest() %>% 
     select(updated, ID, Sex, NSN, `Ethnic.grp.description`, `Citizenship.Passport`, `Descr`)
@@ -174,7 +175,21 @@ load_sso <- function(data_dir) {
   affil$Sex[affil$Sex == "M"] <- "Male"
   # Set NAs to EXTERNAL
   newCols <- setdiff(colnames(student), colnames(affil))
-  affil[newCols] <- "EXTERNAL"
+  affil[newCols] <- "STAFF"
+  
+  ## No Citizenship sheet
+  # Get excel workbooks that have "No Affil" sheet
+  isCitizenship <- lapply(availSheet, function(x) {"No citizenship" %in% unlist(x)})
+  isCitizenship <- files[which(unlist(isCitizenship))]
+  # Read excel
+  citizenship <- tibble(updated = basename(dirname(isCitizenship)), filename = isCitizenship) %>% 
+    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="No citizenship", startRow = 2,  stringsAsFactors = FALSE))) %>% 
+    select(-filename) %>% 
+    unnest() %>% 
+    select(-`Display.Name`, -`Birthdate`)
+  # Set NAs to EXTERNAL
+  newCols <- setdiff(colnames(student), colnames(citizenship))
+  citizenship[newCols] <- "STAFF"
   
   
   # Merge all sheets data
