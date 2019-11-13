@@ -6,6 +6,7 @@ library(dplyr)
 library(tidyr)
 library(xlsx)
 library(reshape2)
+library(tools)
 
 ## Replacements
 facultyRename <- tibble(
@@ -109,12 +110,12 @@ load_sso <- function(data_dir) {
   c <- sapply(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = "Student", skip = 1), class)
   c["Birthdate"] <- "POSIXct"
   # Read and clean sheet
-  student <- tibble(updated = years[1], filename = files[1]) %>% 
+  student <- tibble(updated = basename(dirname(files[1])), filename = files[1]) %>% 
     mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c, stringsAsFactors = FALSE))) %>% 
     select(-filename) %>% 
     unnest() %>% 
     group_by(ID) %>%
-    filter(`Admit.Term`==max(as.numeric(as.character(`Admit.Term`)))) %>% # Only select most recent updates
+    filter(as.numeric(`Admit.Term`)==max(as.numeric(as.character(`Admit.Term`)))) %>% # Only select most recent updates
     ungroup() %>%
     distinct() # Remove duplicates
   student$Owner.of.Major.Spec.Module <- facultyRename$newFaculty[match(student$Owner.of.Major.Spec.Module, facultyRename$oldFaculty)]
@@ -127,7 +128,7 @@ load_sso <- function(data_dir) {
       select(-filename) %>% 
       unnest() %>% 
       group_by(ID) %>%
-      filter(`Admit.Term`==max(as.numeric(as.character(`Admit.Term`)))) %>% # Only select most recent updates
+      filter(as.numeric(`Admit.Term`)==max(as.numeric(as.character(`Admit.Term`)))) %>% # Only select most recent updates
       ungroup() %>%
       distinct() 
     student <- student %>% 
@@ -195,6 +196,7 @@ load_sso <- function(data_dir) {
   # Merge all sheets data
   all <- rbind(student, applicant)
   all <- rbind(all, affil)
+  all <- rbind(all, citizenship)
   #all <- do.call("rbind", list(student, affil, applicant))
   
   return(all)
@@ -310,7 +312,7 @@ join_table <- function(selected_partProg, partInfo) {
   
   ## Filter out non-students, overarching programmes, and add year
   df_stud <- df %>% 
-    filter(!is.na(`Acad.Prog`)) %>% 
+    #filter(!is.na(`Acad.Prog`)) %>% 
     filter(grepl("^\\d{4}", programme)) %>% 
     mutate(year=substring(`programme`,0,4), programme=substring(`programme`,6)) %>% 
     filter(updated == year) %>% 
