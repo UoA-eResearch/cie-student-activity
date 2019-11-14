@@ -1,26 +1,21 @@
 ## CIE Uploads ##
 
+# Settings
+options(java.parameters = "- Xmx1024m")
+
 # libraries
 library(shiny)
-# library(shinydashboard)
-# library(ggplot2)
-# library(ggthemes)
 library(tidyr)
-# library(reshape2)
 library(tidyverse)
 library(readxl)
 library(xlsx)
-library(dplyr)
 library(plyr)
-# library(plotly)
+library(dplyr)
 library(DT)
 library(tools)
-# library(shinyWidgets)
 source("functions.R")
 data_dir <- "../data"
 backup_dir <- "../backup_data"
-#tags_dir <- "../ta"
-
 
 # Define UI for data upload app ----
 ui <- fluidPage(

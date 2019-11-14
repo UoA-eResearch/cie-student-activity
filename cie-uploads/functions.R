@@ -29,13 +29,6 @@ facultyRename <- tibble(
 process_write <- function(data_dir, backup_dir) {
   style <- "notification"
   withProgress(message = "Processing new data", style = style, value = 0.1, {
-    # Load CRM
-    withProgress(message = "Loading CRM data", style=style, value =.5, {
-      partProg <- load_crm(data_dir)
-      incProgress(.4) # Increment the progress bar
-    })
-    incProgress(.1)
-    
     # Load SSO
     withProgress(message = "Loading SSO data", style=style, value =.5, {
       partInfo <- load_sso(data_dir)
@@ -49,6 +42,13 @@ process_write <- function(data_dir, backup_dir) {
       incProgress(.4)
     })
     incProgress(.2)
+    
+    # Load CRM
+    withProgress(message = "Loading CRM data", style=style, value =.5, {
+      partProg <- load_crm(data_dir)
+      incProgress(.4) # Increment the progress bar
+    })
+    incProgress(.1)
     
     # Filtering
     withProgress(message = "Filtering data", style=style, value =.5, {
@@ -91,7 +91,6 @@ process_write <- function(data_dir, backup_dir) {
     })
     incProgress(.1)
     Sys.sleep(0.2)
-    
   })
 
   return("Success!")
@@ -217,27 +216,41 @@ load_crm <- function(data_dir) {
   eventExcel <- filesExcel %>% 
     map(read_excel) %>% 
     reduce(rbind) %>% 
-    select(`UoA ID`, `Tags`)
+    select(`UoA ID`, `Tags`, ID) %>% 
+    na.omit() # Ignore NAs
 
   eventCsv <- filesCsv %>% 
     map(read_csv) %>% 
     reduce(rbind) %>% 
-    select(`UoA ID`, `Tags`)
+    select(`UoA ID`, `Tags`, ID) %>% 
+    na.omit() # Ignore NAs
   
   # Combine two data sets
   studentEvent <- eventCsv %>% 
     rbind(eventExcel) %>% 
-    group_by(`UoA ID`) %>% 
-    mutate(events=str_length(Tags)) %>% # Count number of events
-    filter(events==max(events)) # Latest rows would have higher number of events
+    mutate(`UoA ID` = replace(`UoA ID`, `UoA ID` == "EXTERNAL", paste0(`UoA ID`, `ID`))) # Change EXTERNAL to EXTERNAL_randomID
   
   # Transform to participant programme
   partProg <- studentEvent$Tags %>% 
     strsplit(., ",") %>% 
     setNames(studentEvent$`UoA ID`) %>% 
     melt(value.name = "programme") %>% 
+    filter(grepl("^\\d{4}", programme))
+  
+  # Change column names
+  colnames(partProg) <- c("programme", "ID")
+  
+  # Filter to student
+  studentEvent <- partProg %>% 
+    filter(!grepl("EXTERNAL", `ID`)) %>%
     distinct() # Remove any duplicates
   
+  # Merge with External
+  partProg <- partProg %>% 
+    filter(grepl("EXTERNAL", `ID`)) %>% 
+    rbind(studentEvent)
+  
+  # Change column names
   colnames(partProg) <- c("programme", "ID")
   
   return(partProg)
