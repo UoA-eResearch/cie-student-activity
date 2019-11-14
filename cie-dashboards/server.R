@@ -27,7 +27,7 @@ filter_data <- function(dashboard, data_df, selection_df) {
 }
 
 # Import data
-allData <- read_csv("../data/all.csv")
+allData <- read_csv("../data/all.csv", col_types = cols(ID = col_character()))
 selection <- read_csv("../data/tags/tags_selection.csv")
 overview_df <- filter_data("overview", allData, selection)
 programme_df <- filter_data("programme", allData, selection)

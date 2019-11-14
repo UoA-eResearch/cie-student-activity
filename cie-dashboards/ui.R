@@ -16,7 +16,7 @@ library(DT)
 library(shinyWidgets)
 
 # Import data
-allData <- read_csv("../data/all.csv")
+allData <- read_csv("../data/all.csv", col_types = cols(ID = col_character()))
 selection <- read_csv("../data/tags_selection.csv")
 availProg <- selection %>% 
         filter(selection[,5] == "Y") %>% 
