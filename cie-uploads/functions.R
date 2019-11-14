@@ -84,8 +84,7 @@ process_write <- function(data_dir, backup_dir) {
       incProgress(.1)
       Sys.sleep(0.2)
       # Remove cache on the server
-      system("touch ../cie-dashboards/ui.R")
-      system("touch ../cie-dashboards/server.R")
+      system("touch ../cie-dashboards/*.R")
       incProgress(.1)
       Sys.sleep(0.2)
     })
@@ -328,8 +327,14 @@ join_table <- function(selected_partProg, partInfo) {
     #filter(!is.na(`Acad.Prog`)) %>% 
     filter(grepl("^\\d{4}", programme)) %>% 
     mutate(year=substring(`programme`,0,4), programme=substring(`programme`,6)) %>% 
-    filter(updated == year) %>% 
-    distinct()
+    filter(updated == year || is.na(updated)) %>% # Remove accumalive data exempt EXTERNAL data
+    select(-`NSN`) %>% 
+    distinct() # Remove duplicates
+  
+  ## Change all NAs to EXTERNAL for EXTERNALs
+  colsToChange <- colnames(df_stud)
+  colsToChange <- colsToChange[!colsToChange%in%c("ID","updated","year", "programme")]
+  df_stud[grepl("EXTERNAL",df_stud$ID),][colsToChange] <- "EXTERNAL"
   
   return(df_stud)
 }

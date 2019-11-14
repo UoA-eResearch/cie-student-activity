@@ -2,6 +2,7 @@
 
 # Settings
 options(java.parameters = "- Xmx1024m")
+system("touch app.R")
 
 # libraries
 library(shiny)
