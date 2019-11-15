@@ -60,7 +60,9 @@ process_write <- function(data_dir, backup_dir) {
     # Merging
     withProgress(message = "Merging data", style=style, value =.5, {
       all_df <- join_table(partProg, partInfo)
-      incProgress(.4)
+      incProgress(.2)
+      all_df$ID <- simple_id(all_df, c("ID"))
+      incProgress(.2)
     })
     incProgress(.1)
     
@@ -337,4 +339,27 @@ join_table <- function(selected_partProg, partInfo) {
   df_stud[grepl("EXTERNAL",df_stud$ID),][colsToChange] <- "EXTERNAL"
   
   return(df_stud)
+}
+
+
+# Anonymise functions
+simple_id <- function(data, cols_to_anon)
+{
+  to_anon <- subset(data, select = cols_to_anon)
+  ids <- unname(apply(to_anon, 1, paste, collapse = ""))
+  as.integer(factor(ids))
+}
+anonymise <- function(data, cols_to_anon, algo = "sha256")
+{
+  if(!require(digest)) stop("digest package is required")
+  to_anon <- subset(data, select = cols_to_anon)
+  unname(apply(to_anon, 1, digest, algo = algo))
+}
+generate_salt <- function(data, cols_to_anon, n_chars = 20)
+{
+  index <- simple_id(data, cols_to_anon)
+  n_indicies <- length(unique(index))
+  chars <- rawToChar(as.raw(32:126), multiple = TRUE)
+  x <- replicate(n_indicies, paste(sample(chars, n_chars, replace = TRUE), collapse = ""))
+  x[index]
 }
