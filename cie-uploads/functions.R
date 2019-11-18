@@ -342,7 +342,6 @@ join_table <- function(selected_partProg, partInfo) {
   return(df_stud)
 }
 
-
 # Anonymise functions
 simple_id <- function(data, cols_to_anon)
 {
@@ -364,7 +363,6 @@ generate_salt <- function(data, cols_to_anon, n_chars = 20)
   x <- replicate(n_indicies, paste(sample(chars, n_chars, replace = TRUE), collapse = ""))
   x[index]
 }
-
 
 # Sankey Diagram
 sankey_dataframe <- function(all,tags_selection) {

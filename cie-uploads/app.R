@@ -45,6 +45,9 @@ ui <- fluidPage(
                         # Type
                         radioButtons("saveType", "Select type of file", choices = c("None", "SSO" = "From Rachel - ", "CRM" = "Original - ", "TAG" = "tags-selection")),
                         
+                        # Type
+                        radioButtons("saveSheet", "Select sheet to preview", choices = c("None")),
+                        
                         # Save Button ----
                         actionButton("save", "Save"),
                         actionButton("reload", "Reload"),
@@ -81,13 +84,19 @@ ui <- fluidPage(
 
 
 # Define server logic required to draw a histogram ----
-server <- function(input, output) {
+server <- function(input, output, session) {
+        # Update the filers based on selected year
+        observe({
+          if (input$saveType == "From Rachel - ") {
+            updateRadioButtons(session, "saveSheet", choices = c(excel_sheets(input$uploadFile$datapath)))
+          }
+        })
+  
         data <- reactive({
                 # Error messages
                 validate(
                         need(input$saveYear != "", message="Please select valid year"),
                         need(input$saveType != "None", message = "Please select file type")
-                        
                 )
                 req(input$uploadFile, input$saveType, input$saveYear)
                 
@@ -107,23 +116,16 @@ server <- function(input, output) {
                         }
                         # Import From.*xlsx
                         else if (("Student" %in% excel_sheets(uploadPath) || "Students" %in% excel_sheets(uploadPath))  && input$saveType == "From Rachel - ") {
-                                # Get column types
-                                c <- sapply(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = "Student", skip = 1), class)
-                                c["Birthdate"] <- "POSIXct"
-                                if ("Student" %in% excel_sheets(uploadPath)) {
-                                        df <- read.xlsx2(uploadPath, sheetName="Student", startRow = 2)
+                                if (input$saveSheet %in% c("Student", "Applicant", "No Affil", "No citizenship")) {
+                                  df <- read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 2)
+                                  
+                                  # Add column names row
+                                  cols <- as.data.frame(t(colnames(df)))
+                                  colnames(cols) <- colnames(df)
+                                  df <- rbind.fill(cols, df)
+                                  # Add an empty row
+                                  df <- add_row(df, .before = 1)
                                 }
-                                else {
-                                        df <- read.xlsx2(uploadPath, sheetName="Students", startRow = 2)       
-                                }
-                                
-                                
-                                # Add column names row
-                                cols <- as.data.frame(t(colnames(df)))
-                                colnames(cols) <- colnames(df)
-                                df <- rbind.fill(cols, df)
-                                # Add an empty row
-                                df <- add_row(df, .before = 1)
                         }
                         else if ("contacts" %in% excel_sheets(uploadPath) && input$saveType == "Original - ") {
                                 df  <- read_excel(uploadPath)
@@ -132,8 +134,6 @@ server <- function(input, output) {
                 
                 # Change to dafa.frame
                 df <- as.data.frame(df)
-                
-                
                 
                 return(df)
         })
@@ -169,7 +169,6 @@ server <- function(input, output) {
         output$saveFileName <- renderPrint({
                 saveName()
                 })
-        #output$saveFileName <- renderPrint(file.exists(file.path(data_dir,input$saveYear)))
 
         observeEvent(input$save, {
                 req(input$uploadFile, input$saveType, input$saveYear)
@@ -215,8 +214,28 @@ server <- function(input, output) {
                       
                     } else if (input$saveType == "From Rachel - ") {
                       
+                      # Create an empty workbook
+                      wb = createWorkbook()
+                      
+                      ## Read every sheet and rbind after
+                      for (availSheet in intersect(excel_sheets(input$uploadFile$datapath), c("Student", "Applicant", "No Affil", "No citizenship"))) {
+                        # Create an empty sheet
+                        sheet = createSheet(wb, availSheet)
+                        
+                        # Read the sheet
+                        df <- read.xlsx2(input$uploadFile$datapath, sheetName=availSheet, startRow = 2, stringsAsFactors = FALSE)
+                        cols <- as.data.frame(t(colnames(df))) # Add column names row
+                        colnames(cols) <- colnames(df)
+                        df <- rbind.fill(cols, df)
+                        df <- add_row(df, .before = 1) # Add an empty row
+                        
+                        # Add data frame to the sheet
+                        addDataFrame(df, sheet = sheet, startColumn = 1, row.names = FALSE)
+                      }
+                      
                       # Save .xlsx data files
-                      write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "Student", row.names = FALSE, col.names = FALSE)
+                      #write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "Student", row.names = FALSE, col.names = FALSE)
+                      saveWorkbook(wb, file.path(data_dir, input$saveYear, saveName()))
                       
                     } else if (input$saveType == "Original - ") {
                       
