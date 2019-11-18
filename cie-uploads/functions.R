@@ -7,6 +7,7 @@ library(tidyr)
 library(xlsx)
 library(reshape2)
 library(tools)
+library(networkD3)
 
 ## Replacements
 facultyRename <- tibble(
@@ -362,4 +363,31 @@ generate_salt <- function(data, cols_to_anon, n_chars = 20)
   chars <- rawToChar(as.raw(32:126), multiple = TRUE)
   x <- replicate(n_indicies, paste(sample(chars, n_chars, replace = TRUE), collapse = ""))
   x[index]
+}
+
+
+# Sankey Diagram
+sankey_dataframe <- function(all,tags_selection) {
+  # Cleans all data
+  all <- all %>% select(`ID`, `programme`, `year`)
+  all$programme <- paste(all$year,all$programme)
+  all <- all[all$programme %in% tags$final_tags,]
+  
+  # Filter out Journey Table data
+  tags <- tags %>% filter(journey=="Y")
+  tags <- tags %>% filter(date !="Overarching Tag")
+  
+  # Do pairwise count
+  pc <- pairwise_count(all, programme, ID)
+  pc$year1 <- substring(pc$item1,0,4)
+  pc$year2 <- substring(pc$item2,0,4)
+  pc <- pc %>% filter(year1 < year2) # Have to change this to date
+  
+  # Node names
+  nodes <- data.frame(name=c(as.character(pc$item1), as.character(pc$item2)) %>% unique())
+  pc$ID1 <- match(pc$item1, nodes$name) - 1
+  pc$ID2 <- match(pc$item2, nodes$name) - 1
+  
+  return(pc)
+  # p <- sankeyNetwork(Links = pc, Nodes=nodes, Source = "ID1", "ID2", "n", NodeID = "name", NodeGroup = "year", LinkGroup = "role", colourScale = JS("d3.scaleOrdinal(d3.schemeCategory10);"))
 }
