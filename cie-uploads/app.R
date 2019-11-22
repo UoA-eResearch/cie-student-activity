@@ -43,7 +43,7 @@ ui <- fluidPage(
                         selectInput("saveYear", "Select year", choices = 2015:as.numeric(format(Sys.Date(),"%Y"))+1, selected = as.numeric(format(Sys.Date(),"%Y"))),
                         
                         # Type
-                        radioButtons("saveType", "Select type of file", choices = c("None", "SSO" = "From Rachel - ", "CRM" = "Original - ", "TAG" = "tags-selection")),
+                        radioButtons("saveType", "Select type of file", choices = c("None", "SSO" = "From Rachel - ", "CRM" = "Original - ", "TAG" = "tags-selection", "TRAINING"="Members and Training ")),
                         
                         # Type
                         radioButtons("saveSheet", "Select sheet to preview", choices = c("None")),
@@ -87,8 +87,8 @@ ui <- fluidPage(
 server <- function(input, output, session) {
         # Update the filers based on selected year
         observe({
-          if (input$saveType == "From Rachel - ") {
-            updateRadioButtons(session, "saveSheet", choices = c(excel_sheets(input$uploadFile$datapath)))
+          if (input$saveType %in% c("From Rachel - ", "Members and Training ")) {
+            updateRadioButtons(session, "saveSheet", choices = c(intersect(excel_sheets(input$uploadFile$datapath), c("3D Printer", "Laser Cutter", "3D Scanner", "Vinyl Cutter","CNC Router", "Sewing Machine", "Soldering and Desoldering Stati", "Hand and Power Tools"))))
           }
         })
   
@@ -115,7 +115,7 @@ server <- function(input, output, session) {
                                 df <- read_excel(uploadPath, sheet = "Tags")
                         }
                         # Import From.*xlsx
-                        else if (("Student" %in% excel_sheets(uploadPath) || "Students" %in% excel_sheets(uploadPath))  && input$saveType == "From Rachel - ") {
+                        else if ( ("Student" %in% excel_sheets(uploadPath) || "Students" %in% excel_sheets(uploadPath))  && input$saveType == "From Rachel - " ) {
                                 if (input$saveSheet %in% c("Student", "Applicant", "No Affil", "No citizenship")) {
                                   df <- read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 2)
                                   
@@ -127,8 +127,15 @@ server <- function(input, output, session) {
                                   df <- add_row(df, .before = 1)
                                 }
                         }
-                        else if ("contacts" %in% excel_sheets(uploadPath) && input$saveType == "Original - ") {
+                        # Import Original.*xlsx
+                        else if ( "contacts" %in% excel_sheets(uploadPath) && input$saveType == "Original - ") {
                                 df  <- read_excel(uploadPath)
+                        }
+                        # Import Member and Training
+                        else if ( input$saveType == "Members and Training ") {
+                          if ( input$saveSheet %in% c("3D Printer", "Laser Cutter", "3D Scanner", "Vinyl Cutter","CNC Router", "Sewing Machine", "Soldering and Desoldering Stati", "Hand and Power Tools")) {
+                                df <- read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 1)
+                          }
                         }
                 }
                 
@@ -183,18 +190,25 @@ server <- function(input, output, session) {
                 }
                 
                 # Copy overwrite previous data to backup directory
-                if (input$saveType == "tags-selection") {
+                if (input$saveType == "tags-selection") { # For TAGS
                   checkDir <- dir(file.path(data_dir, "tags"), pattern = paste0(input$saveType, ".*"), full.names = TRUE)
                   checkDir2 <- file.path(backup_dir, "tags")
-                } else {
+               
+                } else if (input$saveType == "Members and Training ") {  # For TRAINING
+                  checkDir <- dir(file.path(data_dir, "training"), pattern = paste0(input$saveType, ".*"), full.names = TRUE)
+                  checkDir2 <- file.path(backup_dir, "training")
+                  
+                } else { # FOR SSO & CRM
                   checkDir <- dir(file.path(data_dir, input$saveYear), pattern = paste0(input$saveType, ".*"), full.names = TRUE)
                   checkDir2 <- file.path(backup_dir, input$saveYear)
                 }
                 
-                file.copy(checkDir, checkDir2, recursive = TRUE)
+                if (!is_empty(checkDir)){
+                  file.copy(checkDir, checkDir2, recursive = TRUE)
                 
-                #remove previous data from data directories
-                file.remove(checkDir)
+                  #remove previous data from data directories
+                  file.remove(checkDir)
+                }  
                 
                 withProgress(message = "Save uploaded file to server", style = "notification", value = 0.1, {
                   # save uploaded files to data and backup data directories
@@ -212,8 +226,8 @@ server <- function(input, output, session) {
                       # Save tag files
                       write.xlsx2(data(), file=file.path(data_dir, "tags", saveName()), sheetName = "Tags", row.names = FALSE)
                       
-                    } else if (input$saveType == "From Rachel - ") {
-                      
+                    } else if (input$saveType == "From Rachel - ") { 
+                      # FOR SSO  
                       # Create an empty workbook
                       wb = createWorkbook()
                       
@@ -234,24 +248,51 @@ server <- function(input, output, session) {
                       }
                       
                       # Save .xlsx data files
-                      #write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "Student", row.names = FALSE, col.names = FALSE)
                       saveWorkbook(wb, file.path(data_dir, input$saveYear, saveName()))
                       
                     } else if (input$saveType == "Original - ") {
-                      
+                      # FOR CRM
                       # Save .xlsx data files
                       write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "contacts", row.names = FALSE)
+                      
+                    } else if (input$saveType == "Members and Training ") {
+                      # FOR TRAINING
+                      # Create an empty workbook
+                      wb = createWorkbook()
+                      
+                      ## Read every sheet and rbind after
+                      for (availSheet in intersect(excel_sheets(input$uploadFile$datapath), c("3D Printer", "Laser Cutter", "3D Scanner", "Vinyl Cutter","CNC Router", "Sewing Machine", "Soldering and Desoldering Stati", "Hand and Power Tools"))) {
+                        # FOR TRAINING
+                        # Create an empty sheet
+                        sheet = createSheet(wb, availSheet)
+                        
+                        # Read the sheet
+                        df <- read.xlsx2(input$uploadFile$datapath, sheetName=availSheet, startRow = 1, stringsAsFactors = FALSE)
+                        
+                        # Add data frame to the sheet
+                        addDataFrame(df, sheet = sheet, startColumn = 1, row.names = FALSE)
+                      }
+                      
+                      # Save .xlsx data files
+                      saveWorkbook(wb, file.path(data_dir, "training", saveName()))
                     }
                   }
                   incProgress(.4)
                   Sys.sleep(.1)
+                  
+                  # print output message
+                  output$status <- renderPrint({"Saving sucessfully!"})
                 })
+                if (!input$saveType == "Members and Training ") {
+                      # run the data management script functions
+                      status <- process_write(data_dir, backup_dir)
+                      
+                      # print output messsage
+                      output$status <- renderPrint({status})
+                }
                 
-                # run the data management script functions
-                status <- process_write(data_dir, backup_dir)
                 
-                # print output messsage
-                output$status <- renderPrint({status})
+                
         })
         
         observeEvent(input$reload, {

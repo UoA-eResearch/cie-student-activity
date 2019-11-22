@@ -4,6 +4,7 @@ library(readxl)
 library(plyr)
 library(dplyr)
 library(tidyr)
+library(widyr)
 library(xlsx)
 library(reshape2)
 library(tools)
@@ -365,27 +366,95 @@ generate_salt <- function(data, cols_to_anon, n_chars = 20)
 }
 
 # Sankey Diagram
-sankey_dataframe <- function(all,tags_selection) {
+journey_sankey <- function(all,tags_selection) {
   # Cleans all data
-  all <- all %>% select(`ID`, `programme`, `year`)
+  all <- read_csv("../data/all.csv", col_types = cols(ID = col_character()))
+  tags <- read_csv("../data/tags/tags_selection.csv")
+  all <- all %>% filter(!`Owner.of.Major.Spec.Module` %in% c("ALUMNI","STAFF", "EXTERNAL")) %>% select(`ID`, `programme`, `year`)
   all$programme <- paste(all$year,all$programme)
-  all <- all[all$programme %in% tags$final_tags,]
   
   # Filter out Journey Table data
   tags <- tags %>% filter(journey=="Y")
-  tags <- tags %>% filter(date !="Overarching Tag")
+  tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="")
+  tags <- tags %>% select(`final_tags`, `date`)
+  all <- all[all$programme %in% tags$final_tags,]
+  winnersID <- all %>% filter(grepl("2018 Velocity Innovation Challenge Winner", all$programme)) %>% distinct(ID)
+  all <- all %>% filter(ID %in% winnersID$ID) %>% distinct()
   
   # Do pairwise count
   pc <- pairwise_count(all, programme, ID)
+  pc <- merge(pc,tags, by.x="item1", by.y="final_tags", all.x = TRUE) %>% distinct()
+  pc <- merge(pc,tags, by.x="item2", by.y="final_tags", all.x = TRUE) %>% distinct()
+  colnames(pc)[4:5] <- c("date1", "date2") # change column names
+  pc <- pc %>% filter(date1<date2) # Filter out pairs according to the flow of events
   pc$year1 <- substring(pc$item1,0,4)
   pc$year2 <- substring(pc$item2,0,4)
-  pc <- pc %>% filter(year1 < year2) # Have to change this to date
+  pc <- pc %>% filter(!year1>year2) %>% filter(!year2 > 2018) %>% filter(!date2 > 41765) %>% filter(n>2) #%>% filter(!grepl("2018 Velocity Innovation.*Participant"), item2)
+  #pc$role <- if_else(grepl("Winner", pc$item2), "Winner", "Participant")
+  # pc <- pc %>% filter(grepl("Winner", pc$item2))
+  # pc <- pc %>% filter(grepl("2019", pc$item2))
+  pc <- pc %>% filter(!grepl("2018 Velocity Innovation Challenge.*Participant", `item2`)) %>% filter(!grepl("2018 Velocity Innovation Challenge .+Winner", `item2`))
   
   # Node names
   nodes <- data.frame(name=c(as.character(pc$item1), as.character(pc$item2)) %>% unique())
+  #nodes$year <- if_else(grepl("Winner", nodes$name), "Winner", substring(nodes$name, 0, 4))
+  nodes$year <- substring(nodes$name, 0, 4)
   pc$ID1 <- match(pc$item1, nodes$name) - 1
   pc$ID2 <- match(pc$item2, nodes$name) - 1
   
-  return(pc)
+  #Pick color
+  ##ebebeb
+  #my_color <- 'd3.scaleOrdinal() .domain(["Participant", "Winner"]) .range(["#ebebeb", "#274bc2"])'
+  p <- sankeyNetwork(Links = pc, Nodes=nodes, Source = "ID1", "ID2", "n", NodeID = "name", NodeGroup = "year", colourScale = JS("d3.scaleOrdinal(d3.schemeCategory10);"))
   # p <- sankeyNetwork(Links = pc, Nodes=nodes, Source = "ID1", "ID2", "n", NodeID = "name", NodeGroup = "year", LinkGroup = "role", colourScale = JS("d3.scaleOrdinal(d3.schemeCategory10);"))
+  
+  return(pc)
+}
+
+
+# Heat map
+journey_heatmap <- function(all, tags_selection) {
+  # Cleans all data
+  all <- read_csv("../data/all.csv", col_types = cols(ID = col_character()))
+  tags <- read_csv("../data/tags/tags_selection.csv")
+  all <- all %>% filter(!`Owner.of.Major.Spec.Module` %in% c("ALUMNI","STAFF", "EXTERNAL")) %>% select(`ID`, `programme`, `year`)
+  all$programme <- paste(all$year,all$programme)
+  
+  # Filter out Journey Table data
+  tags <- tags %>% filter(journey=="Y")
+  tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="") # Need to include these in then
+  tags <- tags %>% select(`final_tags`, `date`)
+  all <- all[all$programme %in% tags$final_tags,]
+  winnersID <- all %>% filter(grepl("2018 Velocity Innovation Challenge Winner", all$programme)) %>% distinct(ID)
+  all <- all %>% filter(ID %in% winnersID$ID) %>% distinct()
+  all <- all %>% filter(!grepl("2018 Velocity Innovation Challenge.*Participant", `programme`)) %>% filter(!grepl("2018 Velocity Innovation Challenge .+Winner", `programme`))
+  
+  all$count <- 1 # Add count
+  #all[which(grepl("Winner", all$programme)),]["count"] <- 10 # Colour people who won before
+  all <- all %>% select(-year) # Unselect year
+  all <- all %>% complete(programme=unique(programme), ID=unique(ID)) %>% distinct() # Fill in empty cells
+  all <- merge(all, tags, by.x = "programme", by.y="final_tags", all.x = TRUE) %>% distinct() # Add date
+  all <- all %>% filter(!date > 41765) # Remove all activities after 2018 Social Innovation Challenge
+  all[is.na(all$count),]["count"] <- 0 # Replace NAs with 0
+  all$programme <- paste(all$date, all$programme)
+  
+  p <- all %>% ggplot(aes(ID, fct_rev(programme))) + geom_tile(aes(fill=count), color="darkblue") +
+    guides(color=FALSE, fill=FALSE) +
+    scale_color_manual(guide = FALSE, values = c("black", "white")) +
+    coord_equal() +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_blank(),
+      #panel.grid.major = element_rect(fill="grey97"),
+      panel.background = element_rect(fill="grey97")
+    ) +
+    labs(x="", y="")
+  
+  ggplotly(p) %>%
+    layout(
+      xaxis = list(showgrid = FALSE, scaleanchor="y", constrain="domain", zeroline=FALSE),
+      yaxis = list(showgrid = FALSE, zeroline=FALSE)
+    )
+  
+  return(pc)
 }
