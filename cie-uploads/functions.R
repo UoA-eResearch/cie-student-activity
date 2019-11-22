@@ -30,7 +30,7 @@ facultyRename <- tibble(
 # Process all data files and write to "all.csv"
 process_write <- function(data_dir, backup_dir) {
   style <- "notification"
-  withProgress(message = "Processing new data", style = style, value = 0.1, {
+  withProgress(message = "Processing new data", style = style, value = 0, {
     # Load SSO
     withProgress(message = "Loading SSO data", style=style, value =.5, {
       partInfo <- load_sso(data_dir)
@@ -52,6 +52,13 @@ process_write <- function(data_dir, backup_dir) {
     })
     incProgress(.1)
     
+    # Load TRAINING
+    withProgress(message = "Loading TRAINING data", style=style, value =.5, {
+      training <- load_training(data_dir)
+      incProgress(.4) # Increment the progress bar
+    })
+    incProgress(.1)
+    
     # Filtering
     withProgress(message = "Filtering data", style=style, value =.5, {
       partProg <- filter_programme(partProg,selection)
@@ -62,9 +69,14 @@ process_write <- function(data_dir, backup_dir) {
     # Merging
     withProgress(message = "Merging data", style=style, value =.5, {
       all_df <- join_table(partProg, partInfo)
-      incProgress(.2)
+      incProgress(.1)
+      all_df <- rbind.fill(all_df, training)
+      incProgress(.1)
       all_df$ID <- simple_id(all_df, c("ID"))
-      incProgress(.2)
+      incProgress(.1)
+      all_training <- all_df %>% filter(!is.na(`date`)) %>% select(`ID`, `date`, `training`)
+      all_df <- all_df %>% filter(is.na(`date`)) %>% select(-`date`, -`training`)
+      incProgress(.1)
     })
     incProgress(.1)
     
@@ -82,9 +94,11 @@ process_write <- function(data_dir, backup_dir) {
     # Export
     withProgress(message = "Uploading data", style=style, value =.5, {
       write_csv(all_df, file.path(data_dir,"all.csv"))
-      incProgress(.2)
-      Sys.sleep(0.2)
+      incProgress(.1)
+      write_csv(all_training, file.path(data_dir,"all_training.csv"))
+      incProgress(.1)
       write_csv(all_df, file.path(backup_dir, "all", paste0("all-",Sys.time(),".csv")))
+      write_csv(all_training, file.path(backup_dir, "all", paste0("all_training-",Sys.time(),".csv")))
       incProgress(.1)
       Sys.sleep(0.2)
       # Remove cache on the server
@@ -363,6 +377,30 @@ generate_salt <- function(data, cols_to_anon, n_chars = 20)
   chars <- rawToChar(as.raw(32:126), multiple = TRUE)
   x <- replicate(n_indicies, paste(sample(chars, n_chars, replace = TRUE), collapse = ""))
   x[index]
+}
+
+# Lad Training data
+load_training <- function(data_dir) {
+  # Gather file paths
+  file <-  dir(file.path(data_dir,"training"), pattern="Members and Training.*xlsx", full.names = TRUE)
+  
+  # Gather available sheets
+  availSheets <- excel_sheets(file)
+  
+  # Read in the data
+  training <- map_df(availSheets, ~read.xlsx2(file, sheetName = ., startRow = 1, stringAsFactors = FALSE)) %>% distinct() %>% select(`Date.Stamp...do.not.copy.into.here`, `ID`, `Tag`, `Tag.1`, `Tag.2`)
+  colnames(training) <- c("date", "ID", "Tag", "Tag.1", "Tag.2")
+  
+  # Filter out NAs rows
+  training <- training %>% filter(!date == "NA")
+  training <- training %>% filter(!ID == "NA")
+  training <- training %>% filter(!Tag == "NA")
+  training <- training %>% filter(!Tag.1 == "NA")
+  training$year <- substring(training$Tag,0,4)
+  training <- training %>% filter(year!="")
+  training <- training %>% mutate(training = paste(training$year, training$Tag.1)) %>% select(`ID`, `date`, `training`) %>% distinct()
+  
+  return(training)
 }
 
 # Sankey Diagram

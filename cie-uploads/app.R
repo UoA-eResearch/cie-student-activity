@@ -283,16 +283,12 @@ server <- function(input, output, session) {
                   # print output message
                   output$status <- renderPrint({"Saving sucessfully!"})
                 })
-                if (!input$saveType == "Members and Training ") {
-                      # run the data management script functions
-                      status <- process_write(data_dir, backup_dir)
-                      
-                      # print output messsage
-                      output$status <- renderPrint({status})
-                }
                 
+                # run the data management script functions
+                status <- process_write(data_dir, backup_dir)
                 
-                
+                # print output messsage
+                output$status <- renderPrint({status})
         })
         
         observeEvent(input$reload, {
