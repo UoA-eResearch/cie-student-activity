@@ -34,6 +34,7 @@ programme_df <- filter_data("programme", allData, selection)
 velocity_df <- filter_data("velocity", allData, selection)
 unleash_df <- filter_data("unleash", allData, selection)
 createmaker_df <- filter_data("createmaker", allData, selection)
+journey_df <- filter_data("journey", allData, selection)
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
@@ -47,6 +48,8 @@ server <- function(input, output, session) {
         return(velocity_df)
       } else if (input$tab == "unleash") {
         return(unleash_df)
+      } else if (input$tab =="journey") {
+        return(journey_df)
       } else {
         return(createmaker_df)
       }
@@ -61,6 +64,10 @@ server <- function(input, output, session) {
         updatePickerInput(session, "baseProgramme", selected = "Unleash Space Participant", choices = sort(unique(filterData()$programme)))
       } else if (input$tab == "createmaker") {
         updatePickerInput(session, "baseProgramme", selected = "Equipment Training Participant", choices = sort(unique(filterData()$programme)))
+      } else if (input$tab == "journey") {
+        availChoices <- filterData() %>% filter(year %in% input$baseYear) %>% distinct(programme)
+        updatePickerInput(session, "baseProgramme", selected = sort(unique(availChoices$programme)), choices = sort(unique(availChoices$programme)))
+        updatePickerInput(session, "baseDestination", selected = "Velocity Innovation Challenge Participant", choices = sort(unique(availChoices$programme)))
       } else if (input$tab %in% c("overview","programme")) {
         updatePickerInput(session, "baseProgramme", selected = "CIE Participant", choices = sort(unique(filterData()$programme)))
       }
@@ -80,7 +87,7 @@ server <- function(input, output, session) {
   facultyPlot_df <- reactive({
     df <- filterData() %>%
       filter(year %in% input$baseYear) %>% 
-      distinct(ID,year,programme, `Owner.of.Major.Spec.Module`) # Remove people who are conjoints
+      distinct(ID,year, `Owner.of.Major.Spec.Module`)
     return(df)
   })
   programmePlot_df <- reactive({
@@ -102,7 +109,7 @@ server <- function(input, output, session) {
   heatmap_df <- reactive({
     df <- filterData() %>% 
       filter(year %in% c(input$baseYear)) %>%
-      distinct(ID,year,programme, `Owner.of.Major.Spec.Module`) # Remove people who are conjoints
+      distinct(ID, year, `Owner.of.Major.Spec.Module`, `programme`)
     return(df)
   })
   debug_df <- reactive({
@@ -175,27 +182,6 @@ server <- function(input, output, session) {
       scale_fill_tableau() + scale_colour_tableau() +
       labs(x="", y="")
   })
-  
-  # output$facultyNPercentage <- renderPlotly({
-  #   p <- facultyPlot_df() %>% 
-  #     group_by(`Owner.of.Major.Spec.Module`,year) %>% 
-  #     summarise(count=n()) %>% 
-  #     group_by(year) %>% 
-  #     mutate(sum_count=sum(count)) %>% 
-  #     ggplot(aes(x=factor(year), y=count, fill=`Owner.of.Major.Spec.Module`, text=paste0(round(count*100/sum_count,0),"%")), alpha=0.5) +
-  #     geom_bar(stat="identity", position = "stack") +
-  #     #scale_y_continuous(labels = scales::percent()) +
-  #     #geom_text(aes(label=count, color=`Owner.of.Major.Spec.Module`), position = position_fill(width = 0.9, preserve = "single")) +
-  #     geom_text(aes(label=if_else(count/sum_count<0.016, "", paste0(round(count*100/sum_count,0),"%"))), position = position_stack(vjust=.5), size = 3, color="black", alpha=0.8) +
-  #     guides(color=FALSE) +
-  #     ggtitle("Faculty split percentage") +
-  #     theme_minimal() + 
-  #     theme(legend.title = element_blank(), legend.text = element_text(size=7)) +
-  #     scale_fill_tableau("Classic 20") + scale_colour_tableau() +
-  #     labs(x="", y="")
-  #   ggplotly(p) %>% 
-  #     layout(legend = list(size= 2))
-  # })
   
   # Programme
   output$programmeN <- renderPlot({
@@ -276,7 +262,6 @@ server <- function(input, output, session) {
       ggtitle("Repeat participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-      #scale_fill_tableau() + scale_colour_tableau()
   })
   
   output$programmeFacultyPlot <- renderPlot({
@@ -310,7 +295,6 @@ server <- function(input, output, session) {
         ggplot(aes(x=reorder(`Plan.Description`, count), xend=reorder(`Plan.Description`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
         geom_segment(aes(y=ymin, yend=ymax), color="grey") +
         geom_point(size=4, alpha=1) +
-        #geom_text(hjust=0, nudge_y = 1.5) +
         geom_text(color="white", size=2) +
         coord_flip() +
         facet_grid(`Owner.of.Major.Spec.Module` ~ programme,  scales = "free_y", space = "free_y") +
@@ -488,7 +472,6 @@ server <- function(input, output, session) {
       ggtitle("Unique participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-    #scale_fill_tableau() + scale_colour_tableau()
   })
   
   output$velocityRepeatPlot <- renderPlot({
@@ -508,7 +491,6 @@ server <- function(input, output, session) {
       ggtitle("Repeat participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-    #scale_fill_tableau() + scale_colour_tableau()
   })
   
   output$velocityFacultyPlot <- renderPlot({
@@ -540,7 +522,6 @@ server <- function(input, output, session) {
         ggplot(aes(x=reorder(`Plan.Description`, count), xend=reorder(`Plan.Description`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
         geom_segment(aes(y=ymin, yend=ymax), color="grey") +
         geom_point(size=4, alpha=1) +
-        #geom_text(hjust=0, nudge_y = 1.5) +
         geom_text(color="white", size=2) +
         coord_flip() +
         facet_grid(`Owner.of.Major.Spec.Module` ~ programme,  scales = "free_y", space = "free_y") +
@@ -700,7 +681,6 @@ server <- function(input, output, session) {
       ggtitle("Unique participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-    #scale_fill_tableau() + scale_colour_tableau()
   })
   
   output$unleashRepeatPlot <- renderPlot({
@@ -752,7 +732,6 @@ server <- function(input, output, session) {
         ggplot(aes(x=reorder(`Plan.Description`, count), xend=reorder(`Plan.Description`, count), y=count, yend=count, label=count, fill=factor(year), colour=factor(year))) +
         geom_segment(aes(y=ymin, yend=ymax), color="grey") +
         geom_point(size=4, alpha=1) +
-        #geom_text(hjust=0, nudge_y = 1.5) +
         geom_text(color="white", size=2) +
         coord_flip() +
         facet_grid(`Owner.of.Major.Spec.Module` ~ programme,  scales = "free_y", space = "free_y") +
@@ -787,7 +766,6 @@ server <- function(input, output, session) {
       ggplot(aes(x=reorder(`Programme.Level`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-      #coord_flip() +
       facet_wrap(programme~., ncol=3) +
       ggtitle("Affiliation") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
@@ -1103,6 +1081,10 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$journeyBarChart <- renderPlot({
+
   })
  
 #}) # End

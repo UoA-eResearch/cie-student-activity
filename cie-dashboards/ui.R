@@ -17,7 +17,7 @@ library(shinyWidgets)
 
 # Import data
 allData <- read_csv("../data/all.csv", col_types = cols(ID = col_character()))
-selection <- read_csv("../data/tags_selection.csv")
+selection <- read_csv("../data/tags/tags_selection.csv")
 availProg <- selection %>% 
         filter(selection[,5] == "Y") %>% 
         select(tag_programme)
@@ -42,6 +42,7 @@ ui <- dashboardPage(
         menuItem("Velocity", tabName = "velocity", icon = icon("fas fa-square")),
         menuItem("Unleash Space", tabName = "unleash", icon = icon("fas fa-square")),
         menuItem("Create and Maker Space", tabName = "createmaker", icon = icon("fas fa-square")),
+        menuItem("Journey map", tabName="journey", icon = icon("fas fa-square")),
         
 
         # Sidebar Inputs
@@ -483,8 +484,27 @@ ui <- dashboardPage(
                                 plotOutput("createmakerIwiPlot", height = "400px"))
                  )
                )
+       ),
+       
+       # Journey table
+       tabItem(
+         tabName = "journey",
+         fluidRow(
+           column(4,
+                  tabItem(tabName = "journey", width=NULL,
+                          pickerInput(
+                            "baseDestination",
+                            "Destination",
+                            selected="Velocity Innovation Challenge Participant",
+                            choices = sort(unique(availProg$programme)),
+                            options = list(`actions-box` = TRUE, placeholder="Select destination..."),
+                            multiple = F
+                          ))),
+           column(8,
+                  tabItem(tabName = "journey", width=NULL,
+                          plotOutput("journeyBarChart", height = "400px")))
+         )
        )
-      
        # End of tabItem
      )
    )
