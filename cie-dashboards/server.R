@@ -65,9 +65,9 @@ server <- function(input, output, session) {
       } else if (input$tab == "createmaker") {
         updatePickerInput(session, "baseProgramme", selected = "Equipment Training Participant", choices = sort(unique(filterData()$programme)))
       } else if (input$tab == "journey") {
-        availChoices <- filterData() %>% filter(year %in% input$baseYear) %>% distinct(programme)
+        availChoices <- filterData() %>% filter(year %in% input$baseYear) %>% mutate(programme = paste(year, programme)) %>% distinct(programme)
         updatePickerInput(session, "baseProgramme", selected = sort(unique(availChoices$programme)), choices = sort(unique(availChoices$programme)))
-        updatePickerInput(session, "baseDestination", selected = "Velocity Innovation Challenge Participant", choices = sort(unique(availChoices$programme)))
+        updatePickerInput(session, "baseDestination", selected = availChoices$programme[4], choices = sort(unique(availChoices$programme)))
       } else if (input$tab %in% c("overview","programme")) {
         updatePickerInput(session, "baseProgramme", selected = "CIE Participant", choices = sort(unique(filterData()$programme)))
       }
@@ -118,6 +118,65 @@ server <- function(input, output, session) {
       filter(programme %in% input$baseProgramme)
     return(df)
   })
+  journey_table_df <- reactive({
+
+    # Filter non-students
+    df <- filterData() %>%
+      filter(!`Owner.of.Major.Spec.Module` %in% c("ALUMNI","STAFF", "EXTERNAL")) %>% select(`ID`, `programme`, `year`)
+
+    # Add year to programme and remove year
+    df$programme <- paste(df$year, df$programme)
+
+    # Filter year and programme
+    df <- df %>%
+      filter(year %in% input$baseYear) %>%
+      filter(programme %in% input$baseProgramme)
+
+    # Filter out Journey Table data
+    tags <- selection %>% filter(journey=="Y")
+    tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="") # Need to include these in then
+    tags <- tags %>% select(`final_tags`, `date`)
+
+    # Filter ID that went to the destination
+    selectedIDs <- df %>% filter(programme %in% input$baseDestination) %>% distinct(ID)
+    df <- df %>% filter(ID %in% selectedIDs$ID) %>% distinct()
+
+    # Remove year
+    df <- df %>% select(-year)
+    # Add count
+    df$count <- 1
+    
+    # Fill in empty cells
+    df <- df %>% complete(programme=unique(programme), ID=unique(ID)) %>% distinct() # Fill in empty cells
+    df <- merge(df, tags, by.x="programme", by.y="final_tags", all.x = TRUE) %>% distinct() # Add date
+
+    # Filter events after the destination date
+    filteredDate <- selection[selection$final_tags==input$baseDestination,]$date
+    df <- df %>% filter(!date >filteredDate) %>% filter(count==1) %>% distinct()
+    
+    # Add total number of events per ID, add total number of IDs per total
+    df_total_event <- df %>% group_by(ID) %>% summarise(total=n()) %>% distinct()
+    df_total_event <- df_total_event %>% group_by(total) %>% mutate(num_students=n()) %>% ungroup()
+
+    # Merge
+    df <- merge(df, df_total_event, by = "ID")
+
+    # Sorting events, remove destination
+    sortedProg <- df %>% distinct(programme,date) %>% filter(programme!=input$baseDestination) %>% arrange(date) %>% distinct(programme)
+    sortedProg <- c("total", "num_students", sortedProg$programme, input$baseDestination)
+
+    # Spread
+    df <- df %>% spread(key=programme, value = count)
+
+    # Replace NAs with 0s
+    df[is.na(df)] = 0
+
+    # Sorted the column
+    df <-  df[,unlist(sortedProg)]
+    df <- aggregate(.~num_students+total, df,FUN=sum)
+    
+    return(df)
+  })
   
   ## Overview Dashboard
   output$totalPlot <- renderPlot({
@@ -131,7 +190,6 @@ server <- function(input, output, session) {
       ggtitle("Total participants by year") +
       theme_minimal() + guides(fill=FALSE, color=FALSE) + labs(y="", x = "")
   })
-  
   output$uniquePlot <- renderPlotly({
     p1 <- overviewPlot_df() %>% 
       select(ID, year, programme) %>%
@@ -225,8 +283,6 @@ server <- function(input, output, session) {
               yaxis = list(showgrid = FALSE, zeroline=FALSE)
         )
   })
-  
-  #output$table <- renderDataTable(debug_df())
   
   ## Programme Dashboard
   output$programmeUniquePlot <- renderPlot({
@@ -1084,8 +1140,18 @@ server <- function(input, output, session) {
   })
   
   output$journeyBarChart <- renderPlot({
-
+    journey_table_df() %>% 
+      select(total, num_students) %>% 
+      ggplot(aes(total,num_students)) + 
+      geom_bar(stat="identity", position = position_dodge2(width = 0.9, preserve = "single"), fill="darkblue") +
+      geom_text(aes(label=num_students), position = position_dodge2(width = 0.9, preserve = "single"), vjust=0) +
+      theme_minimal() 
   })
+  
+  output$journeyTable <- renderDataTable({
+    df <- journey_table_df() %>% select(-num_students)
+    return(df)
+  }, options = list(scrollX = TRUE))
  
 #}) # End
 }

@@ -490,19 +490,25 @@ ui <- dashboardPage(
        tabItem(
          tabName = "journey",
          fluidRow(
-           column(4,
+           column(12,
                   tabItem(tabName = "journey", width=NULL,
                           pickerInput(
                             "baseDestination",
                             "Destination",
-                            selected="Velocity Innovation Challenge Participant",
+                            selected="",
                             choices = sort(unique(availProg$programme)),
                             options = list(`actions-box` = TRUE, placeholder="Select destination..."),
                             multiple = F
-                          ))),
-           column(8,
+                          )))),
+         fluidRow(
+           column(12,
                   tabItem(tabName = "journey", width=NULL,
-                          plotOutput("journeyBarChart", height = "400px")))
+                          plotOutput("journeyBarChart", height = "400px")))),
+         h3(""),
+         fluidRow(
+           column(12,
+                  tabItem(tabName = "journey", width=NULL,
+                          dataTableOutput("journeyTable")))
          )
        )
        # End of tabItem
