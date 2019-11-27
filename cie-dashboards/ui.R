@@ -25,7 +25,6 @@ availProg <- allData %>%
         filter(programme %in% availProg$tag_programme)
 
 ui <- dashboardPage(
-
    # Application title
    dashboardHeader(title = "CIE Dashboard"),
 
@@ -43,7 +42,6 @@ ui <- dashboardPage(
         menuItem("Unleash Space", tabName = "unleash", icon = icon("fas fa-square")),
         menuItem("Create and Maker Space", tabName = "createmaker", icon = icon("fas fa-square")),
         menuItem("Journey map", tabName="journey", icon = icon("fas fa-square")),
-        
 
         # Sidebar Inputs
         pickerInput(
@@ -60,8 +58,7 @@ ui <- dashboardPage(
                 selected="CIE Participant",
                 choices = sort(unique(availProg$programme)),
                 options = list(`actions-box` = TRUE, placeholder="Select programme..."),
-                multiple = T
-        )
+                multiple = T)
      )
    ),
 
@@ -107,13 +104,6 @@ ui <- dashboardPage(
                  column(12,
                         plotlyOutput("programmeSplitFaculty", height="800px"))     
          )
-         # # Table
-         # #h4("Data table"),
-         # fluidRow(
-         #   column(12,
-         #          dataTableOutput("table")
-         #    )
-         # )
        ),
 
        # Programme
@@ -499,7 +489,9 @@ ui <- dashboardPage(
                             choices = sort(unique(availProg$programme)),
                             options = list(`actions-box` = TRUE, placeholder="Select destination..."),
                             multiple = F
-                          )))),
+                          ))),
+           column(12,
+                    htmlOutput("journeyTotal"))),
          fluidRow(
            column(12,
                   tabItem(tabName = "journey", width=NULL,
@@ -509,6 +501,12 @@ ui <- dashboardPage(
            column(12,
                   tabItem(tabName = "journey", width=NULL,
                           dataTableOutput("journeyTable")))
+         ),
+         h3(""),
+         fluidRow(
+           column(12,
+                  tabItem(tabName = "journey", width=NULL, 
+                          plotOutput("journeyHeatmap", height="800px")))
          )
        )
        # End of tabItem

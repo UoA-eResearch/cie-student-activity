@@ -35,6 +35,9 @@ velocity_df <- filter_data("velocity", allData, selection)
 unleash_df <- filter_data("unleash", allData, selection)
 createmaker_df <- filter_data("createmaker", allData, selection)
 journey_df <- filter_data("journey", allData, selection)
+all_training <- read_csv("../data/all_training.csv", col_types = cols(ID = col_character())) %>% filter(!is.na(date)) %>% distinct()
+colnames(all_training) <- c("ID", "date", "programme")
+
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
@@ -118,8 +121,7 @@ server <- function(input, output, session) {
       filter(programme %in% input$baseProgramme)
     return(df)
   })
-  journey_table_df <- reactive({
-
+  journey_map_df <- reactive({
     # Filter non-students
     df <- filterData() %>%
       filter(!`Owner.of.Major.Spec.Module` %in% c("ALUMNI","STAFF", "EXTERNAL")) %>% select(`ID`, `programme`, `year`)
@@ -149,28 +151,41 @@ server <- function(input, output, session) {
     # Fill in empty cells
     df <- df %>% complete(programme=unique(programme), ID=unique(ID)) %>% distinct() # Fill in empty cells
     df <- merge(df, tags, by.x="programme", by.y="final_tags", all.x = TRUE) %>% distinct() # Add date
-
+    
+    # Add all_training dfs
+    training_df <- all_training %>% filter(ID %in% selectedIDs$ID)  %>% mutate(count=1)
+    df <- rbind(df, training_df)
+    df <- df %>% complete(programme=unique(programme), ID=unique(ID)) %>% distinct() # Fill in empty cells
+    df[is.na(df$count),]["count"] <- 0 # Replace NAs with 0
+    
     # Filter events after the destination date
     filteredDate <- selection[selection$final_tags==input$baseDestination,]$date
-    df <- df %>% filter(!date >filteredDate) %>% filter(count==1) %>% distinct()
+    df <- df %>% filter(!date >filteredDate) %>% distinct()
+    
+    return(df)
+  })
+  
+  journey_table_df <- reactive({
+    # Filter count == 1
+    df <- journey_map_df() %>% filter(count==1)
     
     # Add total number of events per ID, add total number of IDs per total
-    df_total_event <- df %>% group_by(ID) %>% summarise(total=n()) %>% distinct()
+    df_total_event <-df %>% group_by(ID) %>% summarise(total=n()) %>% distinct()
     df_total_event <- df_total_event %>% group_by(total) %>% mutate(num_students=n()) %>% ungroup()
-
+  
     # Merge
     df <- merge(df, df_total_event, by = "ID")
-
+    
     # Sorting events, remove destination
     sortedProg <- df %>% distinct(programme,date) %>% filter(programme!=input$baseDestination) %>% arrange(date) %>% distinct(programme)
     sortedProg <- c("total", "num_students", sortedProg$programme, input$baseDestination)
-
+    
     # Spread
     df <- df %>% spread(key=programme, value = count)
-
+    
     # Replace NAs with 0s
     df[is.na(df)] = 0
-
+    
     # Sorted the column
     df <-  df[,unlist(sortedProg)]
     df <- aggregate(.~num_students+total, df,FUN=sum)
@@ -1139,19 +1154,39 @@ server <- function(input, output, session) {
       scale_fill_tableau() + scale_colour_tableau()
   })
   
+  
+  # Journey map
+  output$journeyTotal <- renderText({
+    df <- journey_map_df() %>% distinct(ID)
+    return(paste("<b>Total: </b>",length(df$ID)))
+  })
+  
   output$journeyBarChart <- renderPlot({
     journey_table_df() %>% 
       select(total, num_students) %>% 
-      ggplot(aes(total,num_students)) + 
-      geom_bar(stat="identity", position = position_dodge2(width = 0.9, preserve = "single"), fill="darkblue") +
+      ggplot(aes(factor(total),num_students)) + 
+      geom_bar(stat="identity", position = position_dodge2(width = 0.9, preserve = "single")) +
       geom_text(aes(label=num_students), position = position_dodge2(width = 0.9, preserve = "single"), vjust=0) +
       theme_minimal() 
   })
   
   output$journeyTable <- renderDataTable({
     df <- journey_table_df() %>% select(-num_students)
+    #df <- t(df) # Transpose
     return(df)
   }, options = list(scrollX = TRUE))
  
+  output$journeyHeatmap <- renderPlot({
+    journey_map_df() %>% mutate(programme=if_else(programme!=input$baseDestination,paste(date,programme), paste("Destination: ", programme))) %>%  ggplot(aes(ID, fct_rev(programme))) + geom_tile(aes(fill=count)) +
+      guides(color=FALSE, fill=FALSE) +
+      scale_color_manual(guide = FALSE, values = c("black", "white")) +
+      theme_minimal() +
+      theme(
+        axis.text.x = element_blank(),
+        #panel.grid.major = element_rect(fill="grey97"),
+        panel.background = element_rect(fill="grey97")
+      ) +
+      labs(x="", y="")
+  })
 #}) # End
 }
