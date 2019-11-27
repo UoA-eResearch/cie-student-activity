@@ -193,6 +193,33 @@ server <- function(input, output, session) {
     return(df)
   })
   
+  journey_sankey_df <- reactive({
+    # Add number of events per ID
+    df <- journey_map_df() %>% filter(count==1)
+    df <- df %>% group_by(ID) %>% mutate(count_event=n()) %>% ungroup()
+    
+    # Split datasets into single event goers and multiple event goers
+    df_single <- df %>% filter(count_event==1) %>% group_by(ID) %>% arrange(date, .by_group=TRUE) %>% ungroup()
+    df_not_single <- df %>% filter(count_event!=1) %>% group_by(ID) %>% arrange(date, .by_group=TRUE) %>% ungroup()
+
+    # Add lags to both datasets
+    df_single_lag <- df_single %>% group_by(ID) %>% mutate(source.programme=lead(programme,1, default = NA)) %>% arrange(date, .by_group=TRUE) %>% ungroup()
+    df_not_single_lag <- df_not_single %>% group_by(ID) %>% mutate(target.programme=lead(programme,1, default = NA)) %>% arrange(date, .by_group=TRUE) %>% filter(!is.na(target.programme)) %>% ungroup()
+
+    # Change column names
+    df_not_single_lag <- df_not_single_lag %>% select(programme, target.programme, ID, date)
+    colnames(df_not_single_lag) <- c("source.programme", "target.programme", "ID", "date")
+
+    df_single_lag <- df_single_lag %>% select(programme, source.programme, ID, date)
+    colnames(df_single_lag) <- c("target.programme", "source.programme", "ID", "date")
+    df_lag <- rbind(df_single_lag, df_not_single_lag)
+
+    # Sum counts grouped by target and source
+    df <- df_lag %>% group_by(`target.programme`,`source.programme`) %>% summarise(count=n())
+    
+    return(df)
+  })
+  
   ## Overview Dashboard
   output$totalPlot <- renderPlot({
     overviewPlot_df() %>% 
@@ -1174,6 +1201,8 @@ server <- function(input, output, session) {
     df <- journey_table_df() %>% select(-num_students)
     #df <- t(df) # Transpose
     return(df)
+    #return(journey_map_df())
+    #return(journey_sankey_df())
   }, options = list(scrollX = TRUE))
  
   output$journeyHeatmap <- renderPlot({
@@ -1187,6 +1216,16 @@ server <- function(input, output, session) {
         panel.background = element_rect(fill="grey97")
       ) +
       labs(x="", y="")
+  })
+  
+  output$journeySankey <- renderSankeyNetwork({
+    df <- journey_sankey_df()
+    # Add Node names
+    nodes <- data.frame(name=c(as.character(df$source.programme), as.character(df$target.programme)) %>% unique())
+    df$ID1 <- match(df$source.programme, nodes$name) - 1
+    df$ID2 <- match(df$target.programme, nodes$name) - 1
+    
+    sankeyNetwork(Links = df, Nodes=nodes, Source = "ID1", "ID2", "count", NodeID = "name", nodePadding = 30, fontSize = 10)
   })
 #}) # End
 }

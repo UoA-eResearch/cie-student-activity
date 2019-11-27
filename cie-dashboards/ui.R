@@ -505,6 +505,12 @@ ui <- dashboardPage(
          h3(""),
          fluidRow(
            column(12,
+                  tabItem(tabName = "journey", width=NULL,
+                          sankeyNetworkOutput("journeySankey", height="800px")))
+         ),
+         h3(""),
+         fluidRow(
+           column(12,
                   tabItem(tabName = "journey", width=NULL, 
                           plotOutput("journeyHeatmap", height="800px")))
          )
