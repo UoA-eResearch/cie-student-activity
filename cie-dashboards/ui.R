@@ -513,7 +513,7 @@ ui <- dashboardPage(
          fluidRow(
            column(12,
                   tabItem(tabName = "journey", width=NULL,
-                          plotlyOutput("journeyEventHeatmap", height="1000px")))
+                          plotOutput("journeyEventHeatmap", height="1000px")))
          ),
          h3(""),
          fluidRow(

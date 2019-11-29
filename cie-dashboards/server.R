@@ -1213,29 +1213,40 @@ server <- function(input, output, session) {
   output$journeyTable <- renderDataTable({
     df <- journey_table_df() %>% select(-num_students)
     #df <- t(df) # Transpose
-    return(df)
+    #return(df)
     #return(journey_map_df())
-    #return(journey_sankey_df())
+    return(journey_sankey_df())
   }, options = list(scrollX = TRUE))
   
-  output$journeyEventHeatmap <- renderPlotly({
-    p <- journey_sankey_df() %>% 
-      complete(source.programme =unique(source.programme),target.programme =unique(target.programme)) %>% 
-      distinct() %>% 
-      ggplot(aes(date.target.programme, date.source.programme)) +
-      geom_raster(aes(fill=count)) +
-      geom_text(aes(label=count, colour=count>100), size=4, alpha=0.5) +
-      guides(color=FALSE, fill=FALSE) +
-      scale_fill_gradient_tableau(na.value = "black") +
-      scale_color_manual(guide = FALSE, values = c("black", "white")) +
-      theme_minimal() +
-      theme(
-        axis.text.x = element_text(angle = -45, hjust=0),
-        panel.grid.major = element_blank(),
-        panel.background = element_rect(fill="grey90")
-      ) +
-      labs(x="Destination", y="")
-    ggplotly(p)
+  output$journeyEventHeatmap <- renderPlot({
+    # p <- journey_sankey_df() %>% 
+    #   complete(source.programme =unique(source.programme),target.programme =unique(target.programme)) %>% 
+    #   distinct() %>% 
+    #   ggplot(aes(date.target.programme, date.source.programme)) +
+    #   geom_raster(aes(fill=count)) +
+    #   geom_text(aes(label=count, colour=count>100), size=4, alpha=0.5) +
+    #   guides(color=FALSE, fill=FALSE) +
+    #   scale_fill_gradient_tableau(na.value = "black") +
+    #   scale_color_manual(guide = FALSE, values = c("black", "white")) +
+    #   theme_minimal() +
+    #   theme(
+    #     axis.text.x = element_text(angle = -45, hjust=0),
+    #     panel.grid.major = element_blank(),
+    #     panel.background = element_rect(fill="grey90")
+    #   ) +
+    #   labs(x="Destination", y="")
+    # ggplotly(p)
+    
+    journey_sankey_df() %>% 
+      ggplot(aes(reorder(target.programme,count), count, label=count)) +
+      facet_wrap(.~`date.source.programme`, scale="free_y", ncol=3) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      coord_flip() +
+      ggtitle("Source programme to target programme") +
+      theme(panel.grid.major = element_blank(), panel.background = element_rect(fill="grey90")) + guides(colour=FALSE) + labs(y="", x = "") +
+      #theme(axis.text.x = element_text(angle = -5) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+      scale_fill_tableau() + scale_colour_tableau()
   })
 
   output$journeyIndividualHeatmap <- renderPlot({
