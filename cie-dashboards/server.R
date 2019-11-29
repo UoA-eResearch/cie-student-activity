@@ -13,6 +13,7 @@ library(readxl)
 library(dplyr)
 library(plotly)
 library(shinyWidgets)
+library(networkD3)
 
 # Functions
 filter_data <- function(dashboard, data_df, selection_df) {
@@ -194,6 +195,11 @@ server <- function(input, output, session) {
   })
   
   journey_sankey_df <- reactive({
+    # Filter out Journey Table data
+    tags <- selection %>% filter(journey=="Y")
+    tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="") # Need to include these in then
+    tags <- tags %>% select(`final_tags`, `date`)
+    
     # Add number of events per ID
     df <- journey_map_df() %>% filter(count==1)
     df <- df %>% group_by(ID) %>% mutate(count_event=n()) %>% ungroup()
@@ -216,6 +222,13 @@ server <- function(input, output, session) {
 
     # Sum counts grouped by target and source
     df <- df_lag %>% group_by(`target.programme`,`source.programme`) %>% summarise(count=n())
+    
+    # Add dates to target + source
+    df <- merge(df, tags, by.x="source.programme", by.y="final_tags", all.x = TRUE) %>% distinct() # Add date
+    df <- df %>% mutate(date.source.programme = paste(date, source.programme)) %>% select(-date)
+    df <- merge(df, tags, by.x="target.programme", by.y="final_tags", all.x = TRUE) %>% distinct() # Add date
+    df <- df %>% mutate(date.target.programme = paste(date, target.programme)) %>% select(-date)
+    #print(colnames(df_lag))
     
     return(df)
   })
@@ -1204,8 +1217,28 @@ server <- function(input, output, session) {
     #return(journey_map_df())
     #return(journey_sankey_df())
   }, options = list(scrollX = TRUE))
- 
-  output$journeyHeatmap <- renderPlot({
+  
+  output$journeyEventHeatmap <- renderPlotly({
+    p <- journey_sankey_df() %>% 
+      complete(source.programme =unique(source.programme),target.programme =unique(target.programme)) %>% 
+      distinct() %>% 
+      ggplot(aes(date.target.programme, date.source.programme)) +
+      geom_raster(aes(fill=count)) +
+      geom_text(aes(label=count, colour=count>100), size=4, alpha=0.5) +
+      guides(color=FALSE, fill=FALSE) +
+      scale_fill_gradient_tableau(na.value = "black") +
+      scale_color_manual(guide = FALSE, values = c("black", "white")) +
+      theme_minimal() +
+      theme(
+        axis.text.x = element_text(angle = -45, hjust=0),
+        panel.grid.major = element_blank(),
+        panel.background = element_rect(fill="grey90")
+      ) +
+      labs(x="Destination", y="")
+    ggplotly(p)
+  })
+
+  output$journeyIndividualHeatmap <- renderPlot({
     journey_map_df() %>% mutate(programme=if_else(programme!=input$baseDestination,paste(date,programme), paste("Destination: ", programme))) %>%  ggplot(aes(ID, fct_rev(programme))) + geom_tile(aes(fill=count)) +
       guides(color=FALSE, fill=FALSE) +
       scale_color_manual(guide = FALSE, values = c("black", "white")) +
@@ -1213,7 +1246,7 @@ server <- function(input, output, session) {
       theme(
         axis.text.x = element_blank(),
         #panel.grid.major = element_rect(fill="grey97"),
-        panel.background = element_rect(fill="grey97")
+        panel.background = element_rect(fill="grey99")
       ) +
       labs(x="", y="")
   })

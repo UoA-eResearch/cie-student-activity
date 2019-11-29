@@ -14,6 +14,7 @@ library(dplyr)
 library(plotly)
 library(DT)
 library(shinyWidgets)
+library(networkD3)
 
 # Import data
 allData <- read_csv("../data/all.csv", col_types = cols(ID = col_character()))
@@ -511,8 +512,14 @@ ui <- dashboardPage(
          h3(""),
          fluidRow(
            column(12,
+                  tabItem(tabName = "journey", width=NULL,
+                          plotlyOutput("journeyEventHeatmap", height="1000px")))
+         ),
+         h3(""),
+         fluidRow(
+           column(12,
                   tabItem(tabName = "journey", width=NULL, 
-                          plotOutput("journeyHeatmap", height="800px")))
+                          plotOutput("journeyIndividualHeatmap", height="800px")))
          )
        )
        # End of tabItem
