@@ -228,7 +228,6 @@ server <- function(input, output, session) {
     df <- df %>% mutate(date.source.programme = paste(date, source.programme)) %>% select(-date)
     df <- merge(df, tags, by.x="target.programme", by.y="final_tags", all.x = TRUE) %>% distinct() # Add date
     df <- df %>% mutate(date.target.programme = paste(date, target.programme)) %>% select(-date)
-    #print(colnames(df_lag))
     
     return(df)
   })
@@ -1213,12 +1212,14 @@ server <- function(input, output, session) {
   output$journeyTable <- renderDataTable({
     df <- journey_table_df() %>% select(-num_students)
     #df <- t(df) # Transpose
-    #return(df)
+    return(df)
+    #return(journey_table_df())
     #return(journey_map_df())
-    return(journey_sankey_df())
+    #return(journey_sankey_df())
   }, options = list(scrollX = TRUE))
   
   output$journeyEventHeatmap <- renderPlot({
+    # Correlation matrix heatmap
     # p <- journey_sankey_df() %>% 
     #   complete(source.programme =unique(source.programme),target.programme =unique(target.programme)) %>% 
     #   distinct() %>% 
@@ -1237,16 +1238,46 @@ server <- function(input, output, session) {
     #   labs(x="Destination", y="")
     # ggplotly(p)
     
-    journey_sankey_df() %>% 
-      ggplot(aes(reorder(target.programme,count), count, label=count)) +
-      facet_wrap(.~`date.source.programme`, scale="free_y", ncol=3) +
+    # Faceted bar charts between events
+    # journey_sankey_df() %>% 
+    #   ggplot(aes(reorder(target.programme,count), count, label=count)) +
+    #   facet_wrap(.~`date.source.programme`, scale="free_y", ncol=3) +
+    #   geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+    #   geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+    #   coord_flip() +
+    #   ggtitle("Source programme to target programme") +
+    #   theme(panel.grid.major = element_blank(), panel.background = element_rect(fill="grey90")) + guides(colour=FALSE) + labs(y="", x = "") +
+    #   #theme(axis.text.x = element_text(angle = -5) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+    #   scale_fill_tableau() + scale_colour_tableau()
+    
+    # Facet bar charts between totals
+    df <- journey_table_df() %>% select(-num_students) %>% gather(programme, count, -total) %>% filter(count>0)
+    df <- df %>% filter(total %in% input$journeyGroup)
+    
+    # Filter out Journey Table data
+    tags <- selection %>% filter(journey=="Y")
+    tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="") # Need to include these in then
+    tags <- tags %>% select(`final_tags`, `date`)
+    
+    # Add date
+    df <- merge(df, tags, by.x="programme", by.y="final_tags", all.x = TRUE) %>% distinct() 
+    
+    df %>% 
+      ggplot(aes(reorder(programme,date), count, label=count)) +
+      facet_wrap(total~., ncol=2, scale="free_y") +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
       coord_flip() +
-      ggtitle("Source programme to target programme") +
-      theme(panel.grid.major = element_blank(), panel.background = element_rect(fill="grey90")) + guides(colour=FALSE) + labs(y="", x = "") +
-      #theme(axis.text.x = element_text(angle = -5) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+      ggtitle("Total split") +
+      theme_minimal() +
+      theme(panel.grid.major = element_blank(), panel.background = element_rect(fill="grey97", colour = "white")) + 
+      guides(colour=FALSE) + labs(y="", x = "") +
+      #theme(axis.text.x = element_text(angle = -20, vjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  observeEvent(input$updateTotal, {
+    updatePickerInput(session, "journeyGroup", selected = journey_table_df()$total[1], choices = sort(unique(journey_table_df()$total)))
   })
 
   output$journeyIndividualHeatmap <- renderPlot({

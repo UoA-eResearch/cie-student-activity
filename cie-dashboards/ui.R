@@ -497,6 +497,21 @@ ui <- dashboardPage(
            column(12,
                   tabItem(tabName = "journey", width=NULL,
                           plotOutput("journeyBarChart", height = "400px")))),
+         pickerInput(
+           "journeyGroup",
+           "Group total",
+           selected=c("1","2","3"),
+           choices =c("1","2","3","4","5","6","7","8"),
+           options = list(`actions-box` = TRUE, placeholder="Select group..."),
+           multiple = T
+         ),
+         actionButton("updateTotal", "Update"),
+         h3(""),
+         fluidRow(
+           column(12,
+                  tabItem(tabName = "journey", width=NULL,
+                          plotOutput("journeyEventHeatmap", height="800px")))
+         ),
          h3(""),
          fluidRow(
            column(12,
@@ -508,12 +523,6 @@ ui <- dashboardPage(
            column(12,
                   tabItem(tabName = "journey", width=NULL,
                           sankeyNetworkOutput("journeySankey", height="800px")))
-         ),
-         h3(""),
-         fluidRow(
-           column(12,
-                  tabItem(tabName = "journey", width=NULL,
-                          plotOutput("journeyEventHeatmap", height="1000px")))
          ),
          h3(""),
          fluidRow(
