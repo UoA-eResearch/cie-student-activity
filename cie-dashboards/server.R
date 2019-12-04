@@ -70,8 +70,9 @@ server <- function(input, output, session) {
         updatePickerInput(session, "baseProgramme", selected = "Equipment Training Participant", choices = sort(unique(filterData()$programme)))
       } else if (input$tab == "journey") {
         availChoices <- filterData() %>% filter(year %in% input$baseYear) %>% mutate(programme = paste(year, programme)) %>% distinct(programme)
+        availChoices_baseDestination <- selection %>% filter(journey=="Y") %>% filter(year %in% input$baseYear) %>% filter(!grepl("^\\D", date)) %>% distinct(final_tags)
         updatePickerInput(session, "baseProgramme", selected = sort(unique(availChoices$programme)), choices = sort(unique(availChoices$programme)))
-        updatePickerInput(session, "baseDestination", selected = availChoices$programme[4], choices = sort(unique(availChoices$programme)))
+        updatePickerInput(session, "baseDestination", selected = availChoices_baseDestination$final_tags[4], choices = sort(unique(availChoices_baseDestination$final_tags)))
       } else if (input$tab %in% c("overview","programme")) {
         updatePickerInput(session, "baseProgramme", selected = "CIE Participant", choices = sort(unique(filterData()$programme)))
       }
@@ -146,6 +147,7 @@ server <- function(input, output, session) {
 
     # Remove year
     df <- df %>% select(-year)
+    
     # Add count
     df$count <- 1
     
@@ -154,7 +156,8 @@ server <- function(input, output, session) {
     df <- merge(df, tags, by.x="programme", by.y="final_tags", all.x = TRUE) %>% distinct() # Add date
     
     # Add all_training dfs
-    training_df <- all_training %>% filter(ID %in% selectedIDs$ID)  %>% mutate(count=1)
+    training_df <- all_training %>% filter(ID %in% selectedIDs$ID)  %>% mutate(count=1) #%>% select(training, ID, count, date)
+    #colnames(training_df) <- c("programme", "ID", "count", "date")
     df <- rbind(df, training_df)
     df <- df %>% complete(programme=unique(programme), ID=unique(ID)) %>% distinct() # Fill in empty cells
     df[is.na(df$count),]["count"] <- 0 # Replace NAs with 0
@@ -209,8 +212,8 @@ server <- function(input, output, session) {
     df_not_single <- df %>% filter(count_event!=1) %>% group_by(ID) %>% arrange(date, .by_group=TRUE) %>% ungroup()
 
     # Add lags to both datasets
-    df_single_lag <- df_single %>% group_by(ID) %>% mutate(source.programme=lead(programme,1, default = NA)) %>% arrange(date, .by_group=TRUE) %>% ungroup()
-    df_not_single_lag <- df_not_single %>% group_by(ID) %>% mutate(target.programme=lead(programme,1, default = NA)) %>% arrange(date, .by_group=TRUE) %>% filter(!is.na(target.programme)) %>% ungroup()
+    df_single_lag <- df_single %>% group_by(ID) %>% mutate(source.programme=lead(programme, 1, default = NA)) %>% arrange(date, .by_group=TRUE) %>% ungroup()
+    df_not_single_lag <- df_not_single %>% group_by(ID) %>% mutate(target.programme=lead(programme, 1, default = NA)) %>% arrange(date, .by_group=TRUE) %>% filter(!is.na(target.programme)) %>% ungroup()
 
     # Change column names
     df_not_single_lag <- df_not_single_lag %>% select(programme, target.programme, ID, date)
@@ -1263,7 +1266,7 @@ server <- function(input, output, session) {
     df <- merge(df, tags, by.x="programme", by.y="final_tags", all.x = TRUE) %>% distinct() 
     
     df %>% 
-      ggplot(aes(reorder(programme,date), count, label=count)) +
+      ggplot(aes(reorder(programme,desc(date)), count, label=count)) +
       facet_wrap(total~., ncol=2, scale="free_y") +
       geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
       geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
