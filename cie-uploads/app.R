@@ -12,6 +12,7 @@ library(readxl)
 library(xlsx)
 library(plyr)
 library(dplyr)
+library(widyr)
 library(DT)
 library(tools)
 source("functions.R")
@@ -43,7 +44,12 @@ ui <- fluidPage(
                         selectInput("saveYear", "Select year", choices = 2015:as.numeric(format(Sys.Date(),"%Y"))+1, selected = as.numeric(format(Sys.Date(),"%Y"))),
                         
                         # Type
-                        radioButtons("saveType", "Select type of file", choices = c("None", "SSO" = "From Rachel - ", "CRM" = "Original - ", "TAG" = "tags-selection", "TRAINING"="Members and Training ")),
+                        radioButtons("saveType", "Select type of file", choices = c("None", "SSO" = "From Rachel - ", 
+                                                                                    "CRM" = "Original - ", 
+                                                                                    "TAG" = "tags-selection", 
+                                                                                    "TRAINING" = "Members and Training ",
+                                                                                    "C&M" = "C&M Space Sign In ",
+                                                                                    "INNOVATION" = "Innovation Hub Sign In ")),
                         
                         # Type
                         radioButtons("saveSheet", "Select sheet to preview", choices = c("None")),
@@ -60,6 +66,7 @@ ui <- fluidPage(
                         tags$li(tags$sub("SSO excel files must contain 'Student' Sheet")),
                         tags$li(tags$sub("CRM excel files must contain 'contacts' Sheet")),
                         tags$li(tags$sub("TAGS excel files must contain 'Tags' Sheet")),
+                        tags$li(tags$sub("C&M and INNOVATION excel files must contain 'Form Responses 1' Sheet")),
                         tags$br(),
                         
                         # Horizontal line ----
@@ -137,6 +144,12 @@ server <- function(input, output, session) {
                                 df <- read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 1)
                           }
                         }
+                        # Import C&M Sign In and Innovation Hub Sign In
+                        else if ("Form Responses 1" %in% excel_sheets(uploadPath) && input$saveType %in% c("C&M Space Sign In ", "Innovation Hub Sign In ")) {
+                          #"C&M" = "C&M Space Sign In ",
+                          #"INNOVATION" = "Innovation Hub Sign In "
+                                df <- read_excel(uploadPath)
+                        }
                 }
                 
                 # Change to dafa.frame
@@ -150,7 +163,6 @@ server <- function(input, output, session) {
                 # and uploads a file, head of that data file by default,
                 # or all rows if selected, will be shown
                 
-                #df <- read_csv(input$uploadFile$datapath) %>% head(10)
                 df <- data() %>% head(100)
 
                 return(df)
@@ -172,10 +184,9 @@ server <- function(input, output, session) {
           return(name)
         })
         
-        #output$value <- renderPrint( {input$saveType})
         output$saveFileName <- renderPrint({
                 saveName()
-                })
+        })
 
         observeEvent(input$save, {
                 req(input$uploadFile, input$saveType, input$saveYear)
@@ -198,7 +209,7 @@ server <- function(input, output, session) {
                   checkDir <- dir(file.path(data_dir, "training"), pattern = paste0(input$saveType, ".*"), full.names = TRUE)
                   checkDir2 <- file.path(backup_dir, "training")
                   
-                } else { # FOR SSO & CRM
+                } else { # FOR SSO & CRM & Sign Ins
                   checkDir <- dir(file.path(data_dir, input$saveYear), pattern = paste0(input$saveType, ".*"), full.names = TRUE)
                   checkDir2 <- file.path(backup_dir, input$saveYear)
                 }
@@ -210,17 +221,19 @@ server <- function(input, output, session) {
                   file.remove(checkDir)
                 }  
                 
-                withProgress(message = "Save uploaded file to server", style = "notification", value = 0.1, {
+                withProgress(message = "Save uploaded files to server", style = "notification", value = 0.1, {
                   # save uploaded files to data and backup data directories
                   if (file_ext(uploadPath) == "csv") {
                     incProgress(.4)
                     Sys.sleep(.1)
+                    
                     # Save .csv data files
                     write.csv(data(), file = file.path(data_dir, input$saveYear, saveName()), row.names = FALSE, quote = TRUE)
                     
                   } else if (file_ext(uploadPath) == "xlsx") {
                     incProgress(.4)
                     Sys.sleep(.1)
+                    
                     if (input$saveType == "tags-selection") {
                       
                       # Save tag files
@@ -275,6 +288,10 @@ server <- function(input, output, session) {
                       
                       # Save .xlsx data files
                       saveWorkbook(wb, file.path(data_dir, "training", saveName()))
+                    
+                    } else if (input$saveType %in%  c("C&M Space Sign In ", "Innovation Hub Sign In ")) {
+                      # FOR SIGNINS
+                      write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "Form Responses 1", row.names = FALSE)
                     }
                   }
                   incProgress(.4)
