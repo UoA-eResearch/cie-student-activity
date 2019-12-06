@@ -37,8 +37,8 @@ unleash_df <- filter_data("unleash", allData, selection)
 createmaker_df <- filter_data("createmaker", allData, selection)
 journey_df <- filter_data("journey", allData, selection)
 all_training <- read_csv("../data/all_training.csv", col_types = cols(ID = col_character())) %>% filter(!is.na(date)) %>% distinct()
+all_studio <- read_csv("../data/all_studio.csv", col_types = cols(ID = col_character(), year = col_character())) %>% filter(!is.na(timestamp)) %>% distinct()
 colnames(all_training) <- c("ID", "date", "programme")
-
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
@@ -63,20 +63,47 @@ server <- function(input, output, session) {
   observe({
       #updatePickerInput(session, "baseProgramme", choices = sort(unique(filterData()$programme)))
       if (input$tab == "velocity") {
+        
         updatePickerInput(session, "baseProgramme", selected = "Velocity Participant", choices = sort(unique(filterData()$programme)))
+        updatePickerInput(session, "velocityStudioMonth", selected = sort(unique(studio_df()$month))[1:4], choices = sort(unique(studio_df()$month)))
+        
       } else if (input$tab == "unleash") {
+        
         updatePickerInput(session, "baseProgramme", selected = "Unleash Space Participant", choices = sort(unique(filterData()$programme)))
+        
       } else if (input$tab == "createmaker") {
+        
         updatePickerInput(session, "baseProgramme", selected = "Equipment Training Participant", choices = sort(unique(filterData()$programme)))
+        updatePickerInput(session, "createmakerStudioMonth", selected = sort(unique(studio_df()$month))[1:4], choices = sort(unique(studio_df()$month)))
+        
       } else if (input$tab == "journey") {
+        
         availChoices <- filterData() %>% filter(year %in% input$baseYear) %>% mutate(programme = paste(year, programme)) %>% distinct(programme)
         availChoices_baseDestination <- selection %>% filter(journey=="Y") %>% filter(year %in% input$baseYear) %>% filter(!grepl("^\\D", date)) %>% distinct(final_tags)
         updatePickerInput(session, "baseProgramme", selected = sort(unique(availChoices$programme)), choices = sort(unique(availChoices$programme)))
-        updatePickerInput(session, "baseDestination", selected = availChoices_baseDestination$final_tags[4], choices = sort(unique(availChoices_baseDestination$final_tags)))
+        updatePickerInput(session, "baseDestination", selected = availChoices_baseDestination$final_tags[29], choices = sort(unique(availChoices_baseDestination$final_tags)))
+        
       } else if (input$tab %in% c("overview","programme")) {
+        
         updatePickerInput(session, "baseProgramme", selected = "CIE Participant", choices = sort(unique(filterData()$programme)))
+        
       }
   })
+  
+  studio_df <- reactive({
+    if (input$tab == "velocity") {
+      df <- all_studio %>% 
+        filter(year %in% input$baseYear) %>% 
+        filter(grepl("Innovation", programme))
+    } else if (input$tab == "createmaker") {
+      df <- all_studio %>% 
+        filter(year %in% input$baseYear) %>% 
+        filter(!grepl("Innovation", programme))
+    }
+    
+    return(df)
+  })
+  
   overviewPlot_df <- reactive({
     if (!input$tab %in% c("overview")) {
       df <- filterData() %>% 
@@ -780,6 +807,39 @@ server <- function(input, output, session) {
       scale_fill_tableau() + scale_colour_tableau()
   })
   
+  output$velocityStudioTimeseriesPlot <- renderPlotly({
+      studio_df() %>% 
+        #filter(grepl("Innovation", programme)) %>% 
+        filter(!is.na(date)) %>% 
+        select(date, ID) %>% 
+        distinct() %>% 
+        group_by(date) %>% 
+        summarise(count=n()) %>% 
+        ggplot(aes(date,count)) + 
+        geom_line(linetype="dotted") + 
+        geom_point() + 
+        ggtitle("Studio Participant Timeseries") +
+        theme_minimal()
+  })
+  
+  output$velocityStudioPurposePlot <- renderPlot({
+    studio_df() %>% 
+      filter(month %in% input$velocityStudioMonth) %>% 
+      group_by(month, purpose) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(reorder(purpose,count), count, label=count)) +
+      facet_wrap(month~., ncol=2, scale="free_y") +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      coord_flip() +
+      ggtitle("Studio purpose per month") +
+      theme_minimal() +
+      theme(panel.grid.major = element_blank(), panel.background = element_rect(fill="grey97", colour = "white")) + 
+      guides(colour=FALSE) + labs(y="", x = "") +
+      #theme(axis.text.x = element_text(angle = -20, vjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
   ## Unleash Dashboard
   output$unleashUniquePlot <- renderPlot({
     overviewPlot_df() %>% 
@@ -813,7 +873,6 @@ server <- function(input, output, session) {
       ggtitle("Repeat participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-    #scale_fill_tableau() + scale_colour_tableau()
   })
   
   output$unleashFacultyPlot <- renderPlot({
@@ -1196,6 +1255,56 @@ server <- function(input, output, session) {
       scale_fill_tableau() + scale_colour_tableau()
   })
   
+  # Create Maker Studio
+  output$createmakerStudioTimeseriesPlot <- renderPlotly({
+    studio_df() %>% 
+      #filter(grepl("Innovation", programme)) %>% 
+      filter(!is.na(date)) %>% 
+      select(date, ID) %>% 
+      distinct() %>% 
+      group_by(date) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(date,count)) + 
+      geom_line(linetype="dotted") + 
+      geom_point() + 
+      ggtitle("Studio Participant Timeseries") +
+      theme_minimal()
+  })
+  
+  output$createmakerStudioPurposePlot <- renderPlot({
+    studio_df() %>% 
+      filter(month %in% input$createmakerStudioMonth) %>% 
+      group_by(month, purpose) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(reorder(purpose,count), count, label=count)) +
+      facet_wrap(month~., ncol=2, scale="free_y") +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      coord_flip() +
+      ggtitle("Studio purpose per month") +
+      theme_minimal() +
+      theme(panel.grid.major = element_blank(), panel.background = element_rect(fill="grey97", colour = "white")) + 
+      guides(colour=FALSE) + labs(y="", x = "") +
+      #theme(axis.text.x = element_text(angle = -20, vjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$createmakerStudioEquipmentPlot <- renderPlot({
+    studio_df() %>% 
+      filter(month %in% input$createmakerStudioMonth) %>% 
+      group_by(month, equipment) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(reorder(equipment,count), count, label=count)) +
+      facet_wrap(month~., ncol=2, scale="free_y") +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(hjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      coord_flip() +
+      ggtitle("Studio equipment per month") +
+      theme_minimal() +
+      theme(panel.grid.major = element_blank(), panel.background = element_rect(fill="grey97", colour = "white")) + 
+      guides(colour=FALSE) + labs(y="", x = "") +
+      scale_fill_tableau() + scale_colour_tableau()
+  })
   
   # Journey map
   output$journeyTotal <- renderText({

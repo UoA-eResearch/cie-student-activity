@@ -19,6 +19,8 @@ library(networkD3)
 # Import data
 allData <- read_csv("../data/all.csv", col_types = cols(ID = col_character()))
 selection <- read_csv("../data/tags/tags_selection.csv")
+allStudio <- read_csv("../data/all_studio.csv", col_types = cols(ID = col_character()))
+
 availProg <- selection %>% 
         filter(selection[,5] == "Y") %>% 
         select(tag_programme)
@@ -290,6 +292,32 @@ ui <- dashboardPage(
                         tabItem(tabName="velocity", width=NULL,
                                 plotOutput("velocityIwiPlot", height = "400px"))
                  )
+               ),
+               
+               # Studio time series
+               conditionalPanel(
+                 condition = "input.baseProgramme %in% c('Innovation Hub Studio Participant')",
+                 h3("Studio Time"),
+                 fluidRow(
+                   column(12,
+                          tabItem(tabName="velocity", width=NULL,
+                                  plotlyOutput("velocityStudioTimeseriesPlot", height = "400px"))
+                 )),
+                 pickerInput(
+                   "velocityStudioMonth",
+                   "Month",
+                   selected = sort(unique(allStudio$month))[1:2],
+                   choices = sort(unique(allStudio$month)),
+                   options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
+                   multiple = T
+                 ),
+                 h3(""),
+                 fluidRow(
+                   column(12,
+                          tabItem(tabName="velocity", width=NULL,
+                                  plotOutput("velocityStudioPurposePlot", height = "800px"))
+                 ))
+                 
                )
        ),
 
@@ -474,6 +502,38 @@ ui <- dashboardPage(
                         tabItem(tabName="createmaker", width=NULL,
                                 plotOutput("createmakerIwiPlot", height = "400px"))
                  )
+               ),
+               
+               # Studio time series
+               conditionalPanel(
+                 condition = "input.baseProgramme %in% c('Create and Maker Space Studio Participant')",
+                 h3("Studio Time"),
+                 fluidRow(
+                   column(12,
+                          tabItem(tabName="createmaker", width=NULL,
+                                  plotlyOutput("createmakerStudioTimeseriesPlot", height = "400px"))
+                   )),
+                 pickerInput(
+                   "createmakerStudioMonth",
+                   "Month",
+                   selected = sort(unique(allStudio$month))[1:2],
+                   choices = sort(unique(allStudio$month)),
+                   options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
+                   multiple = T
+                 ),
+                 h3(""),
+                 fluidRow(
+                   column(12,
+                          tabItem(tabName="createmaker", width=NULL,
+                                  plotOutput("createmakerStudioPurposePlot", height = "800px"))
+                 )),
+                 h3(""),
+                 fluidRow(
+                   column(12,
+                          tabItem(tabName="createmaker", width=NULL,
+                                  plotOutput("createmakerStudioEquipmentPlot", height = "800px"))
+                   ))
+                 
                )
        ),
        

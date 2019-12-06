@@ -88,7 +88,7 @@ process_write <- function(data_dir, backup_dir) {
       all_df$ID <- simple_id(all_df, c("ID"))
       incProgress(.1)
       # Split the datasets
-      all_studio <- all_df %>% filter(!is.na(`timestamp`)) %>% select(`ID`, `date`, `purpose`, `equipment`, `comment`, `programme`, `timestamp`)
+      all_studio <- all_df %>% filter(!is.na(`timestamp`)) %>% select(`ID`, `date`, `purpose`, `equipment`, `comment`, `programme`, `timestamp`, `month`, `year`)
       all_training <- all_df %>% filter(is.na(`timestamp`)) %>% select(`ID`, `date`, `training`)
       all_df <- all_df %>% filter(is.na(`date`)) %>% select(-`date`, -`training`, -`purpose`, -`timestamp`, -`equipment`, -`comment`)
       
@@ -313,6 +313,7 @@ load_studio <- function(data_dir, backup_dir) {
     distinct()
   colnames(studioCM) <- c("timestamp", "ID", "purpose", "equipment", "comment", "date", "programme")
   studioCM <- studioCM %>% separate_rows(`purpose`, sep =", ")
+  studioCM <- studioCM %>% separate_rows(`equipment`, sep =", ")
   eventCM <- studioCM %>% select(ID, programme) %>% distinct()
   
   studioIH <- filesIH %>% 
@@ -328,7 +329,7 @@ load_studio <- function(data_dir, backup_dir) {
   eventIH <- studioIH %>% select(ID, programme) %>% distinct()
   
   # Rbind dataframes
-  studio <- rbind.fill(studioCM, studioIH) %>% distinct()
+  studio <- rbind.fill(studioCM, studioIH) %>% distinct() %>% mutate(year = format(date, "%Y")) %>% mutate(month = format(date, "%m/%Y"))
   studio_all <- rbind(eventCM, eventIH) %>% distinct() # This needs to be merged with partTag data frame
   
   # # Write studio to all_studio.csv
