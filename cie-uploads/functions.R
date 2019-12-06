@@ -44,12 +44,23 @@ process_write <- function(data_dir, backup_dir) {
       selection <- load_tag(data_dir, backup_dir)
       incProgress(.4)
     })
-    incProgress(.2)
+    incProgress(.1)
     
     # Load CRM
     withProgress(message = "Loading CRM data", style=style, value =.5, {
       partProg <- load_crm(data_dir)
       incProgress(.4) # Increment the progress bar
+    })
+    incProgress(.1)
+    
+    # Load STUDIO
+    withProgress(message = "Loading CRM data", style=style, value =.5, {
+      listStudio <- load_studio(data_dir, backup_dir)
+      partStudio <- listStudio[[1]]
+      studio <- listStudio[[2]]
+      incProgress(.2) # Increment the progress bar
+      partProg <- rbind(partProg, partStudio)
+      incProgress(.2) # Increment the progress bar
     })
     incProgress(.1)
     
@@ -72,11 +83,15 @@ process_write <- function(data_dir, backup_dir) {
       all_df <- join_table(partProg, partInfo)
       incProgress(.1)
       all_df <- rbind.fill(all_df, training)
+      all_df <- rbind.fill(all_df, studio)
       incProgress(.1)
       all_df$ID <- simple_id(all_df, c("ID"))
       incProgress(.1)
-      all_training <- all_df %>% filter(!is.na(`date`)) %>% select(`ID`, `date`, `training`)
-      all_df <- all_df %>% filter(is.na(`date`)) %>% select(-`date`, -`training`)
+      # Split the datasets
+      all_studio <- all_df %>% filter(!is.na(`timestamp`)) %>% select(`ID`, `date`, `purpose`, `equipment`, `comment`, `programme`, `timestamp`)
+      all_training <- all_df %>% filter(is.na(`timestamp`)) %>% select(`ID`, `date`, `training`)
+      all_df <- all_df %>% filter(is.na(`date`)) %>% select(-`date`, -`training`, -`purpose`, -`timestamp`, -`equipment`, -`comment`)
+      
       incProgress(.1)
     })
     incProgress(.1)
@@ -97,11 +112,12 @@ process_write <- function(data_dir, backup_dir) {
       write_csv(all_df, file.path(data_dir,"all.csv"))
       incProgress(.1)
       write_csv(all_training, file.path(data_dir,"all_training.csv"))
+      write_csv(all_studio, file.path(data_dir,"all_studio.csv"))
       incProgress(.1)
       write_csv(all_df, file.path(backup_dir, "all", paste0("all-",Sys.time(),".csv")))
       write_csv(all_training, file.path(backup_dir, "all", paste0("all_training-",Sys.time(),".csv")))
+      write_csv(all_studio, file.path(backup_dir, "all", paste0("all_studio-",Sys.time(),".csv")))
       incProgress(.1)
-      Sys.sleep(0.2)
       # Remove cache on the server
       system("touch ../cie-dashboards/*.R")
       incProgress(.1)
@@ -274,6 +290,54 @@ load_crm <- function(data_dir) {
   return(partProg)
 }
 
+# Load STUDIO
+load_studio <- function(data_dir, backup_dir) {
+   
+  # Gather file paths
+  years <- list.files(data_dir, pattern = "\\d+")
+  # C&M
+  filesCM <- dir(file.path(data_dir, years), pattern="C&M Space.*xlsx", full.names = TRUE)
+  yearsCM <- basename(dirname(filesCM))
+  # Innovation Hub
+  filesIH <- dir(file.path(data_dir, years), pattern="Innovation Hub.*xlsx", full.names = TRUE)
+  yearsIH <- basename(dirname(filesIH))
+  years <- unique(c(yearsCM, yearsIH))
+  
+  # Read data
+  studioCM <- filesCM %>% 
+    map(read_excel) %>% 
+    reduce(rbind) %>% 
+    select(`Timestamp`, `Student ID`, `What are you using the space for today?`, `What equipment are you planning on using?`, `Any comments, queries or improvements?`) %>%
+    mutate(date = as.Date(Timestamp)) %>% 
+    mutate(programme = paste(format(date, "%Y"), "Create and Maker Space Studio Participant")) %>% 
+    distinct()
+  colnames(studioCM) <- c("timestamp", "ID", "purpose", "equipment", "comment", "date", "programme")
+  studioCM <- studioCM %>% separate_rows(`purpose`, sep =", ")
+  eventCM <- studioCM %>% select(ID, programme) %>% distinct()
+  
+  studioIH <- filesIH %>% 
+    map(read_excel) %>% 
+    reduce(rbind) %>% 
+    select(`Timestamp`, 
+           `What is your University of Auckland ID number (i.e. the 7-9 digit number).                                          If you are not from the University, please write \"EXTERNAL\"`,
+           `What are you here for today:`) %>% 
+    mutate(date = as.Date(Timestamp)) %>% 
+    mutate(programme = paste(format(date, "%Y"), "Innovation Hub Studio Participant")) %>% 
+    distinct()
+  colnames(studioIH) <- c("timestamp", "ID", "purpose", "date", "programme")
+  eventIH <- studioIH %>% select(ID, programme) %>% distinct()
+  
+  # Rbind dataframes
+  studio <- rbind.fill(studioCM, studioIH) %>% distinct()
+  studio_all <- rbind(eventCM, eventIH) %>% distinct() # This needs to be merged with partTag data frame
+  
+  # # Write studio to all_studio.csv
+  # write_csv(studio, file.path(data_dir,"all_studio.csv"))
+  # write_csv(studio, file.path(backup_dir, "all", paste0("all_studio-",Sys.time(),".csv")))
+  
+  return(list(studio_all, studio))
+}
+
 # Load TAG
 load_tag <- function(data_dir, backup_dir) {
   # Gather file paths
@@ -380,7 +444,7 @@ generate_salt <- function(data, cols_to_anon, n_chars = 20)
   x[index]
 }
 
-# Lad Training data
+# Load TRAINING
 load_training <- function(data_dir) {
   # Gather file paths
   file <-  dir(file.path(data_dir,"training"), pattern="Members and Training.*xlsx", full.names = TRUE)
