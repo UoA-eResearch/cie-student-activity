@@ -808,18 +808,34 @@ server <- function(input, output, session) {
   })
   
   output$velocityStudioTimeseriesPlot <- renderPlotly({
-      studio_df() %>% 
-        #filter(grepl("Innovation", programme)) %>% 
-        filter(!is.na(date)) %>% 
-        select(date, ID) %>% 
-        distinct() %>% 
-        group_by(date) %>% 
-        summarise(count=n()) %>% 
-        ggplot(aes(date,count)) + 
-        geom_line(linetype="dotted") + 
-        geom_point() + 
-        ggtitle("Studio Participant Timeseries") +
-        theme_minimal()
+    # Repeat count
+    repeat_count <- studio_df() %>% 
+      filter(!is.na(date)) %>% 
+      select(date, ID) %>% 
+      distinct() %>% 
+      group_by(ID) %>% 
+      arrange(date, .by_group=TRUE) %>% 
+      ungroup() %>% 
+      group_by(ID) %>% 
+      mutate(last.date = lag(date, 1, default = NA)) %>% 
+      filter(!is.na(`last.date`)) %>% 
+      group_by(date) %>% 
+      summarise(repeat.count=n())
+    
+    studio_df() %>% 
+      #filter(grepl("Innovation", programme)) %>% 
+      filter(!is.na(date)) %>% 
+      select(date, ID) %>% 
+      distinct() %>% 
+      group_by(date) %>% 
+      summarise(unique.count=n()) %>% 
+      merge(repeat_count, by="date", all.x = TRUE) %>%
+      gather(key="type", value="value", 2:3) %>% 
+      ggplot(aes(date, value, color=type)) + 
+      geom_line(linetype="dotted") + 
+      geom_point() +
+      ggtitle("Studio Participant Timeseries") +
+      theme_minimal()
   })
   
   output$velocityStudioPurposePlot <- renderPlot({
@@ -1257,16 +1273,32 @@ server <- function(input, output, session) {
   
   # Create Maker Studio
   output$createmakerStudioTimeseriesPlot <- renderPlotly({
+    # Repeat count
+    repeat_count <- studio_df() %>% 
+      filter(!is.na(date)) %>% 
+      select(date, ID) %>% 
+      distinct() %>% 
+      group_by(ID) %>% 
+      arrange(date, .by_group=TRUE) %>% 
+      ungroup() %>% 
+      group_by(ID) %>% 
+      mutate(last.date = lag(date, 1, default = NA)) %>% 
+      filter(!is.na(`last.date`)) %>% 
+      group_by(date) %>% 
+      summarise(repeat.count=n())
+    
     studio_df() %>% 
       #filter(grepl("Innovation", programme)) %>% 
       filter(!is.na(date)) %>% 
       select(date, ID) %>% 
       distinct() %>% 
       group_by(date) %>% 
-      summarise(count=n()) %>% 
-      ggplot(aes(date,count)) + 
+      summarise(unique.count=n()) %>% 
+      merge(repeat_count, by="date", all.x = TRUE) %>%
+      gather(key="type", value="value", 2:3) %>% 
+      ggplot(aes(date, value, color=type)) + 
       geom_line(linetype="dotted") + 
-      geom_point() + 
+      geom_point() +
       ggtitle("Studio Participant Timeseries") +
       theme_minimal()
   })

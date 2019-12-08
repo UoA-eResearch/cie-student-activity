@@ -296,7 +296,7 @@ ui <- dashboardPage(
                
                # Studio time series
                conditionalPanel(
-                 condition = "input.baseProgramme %in% c('Innovation Hub Studio Participant')",
+                 condition = "input.baseProgramme == 'Innovation Hub Studio Participant'",
                  h3("Studio Time"),
                  fluidRow(
                    column(12,
@@ -506,7 +506,7 @@ ui <- dashboardPage(
                
                # Studio time series
                conditionalPanel(
-                 condition = "input.baseProgramme %in% c('Create and Maker Space Studio Participant')",
+                 condition = "input.baseProgramme == 'Create and Maker Space Studio Participant'",
                  h3("Studio Time"),
                  fluidRow(
                    column(12,
