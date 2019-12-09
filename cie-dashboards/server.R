@@ -81,7 +81,7 @@ server <- function(input, output, session) {
         availChoices <- filterData() %>% filter(year %in% input$baseYear) %>% mutate(programme = paste(year, programme)) %>% distinct(programme)
         availChoices_baseDestination <- selection %>% filter(journey=="Y") %>% filter(year %in% input$baseYear) %>% filter(!grepl("^\\D", date)) %>% distinct(final_tags)
         updatePickerInput(session, "baseProgramme", selected = sort(unique(availChoices$programme)), choices = sort(unique(availChoices$programme)))
-        updatePickerInput(session, "baseDestination", selected = availChoices_baseDestination$final_tags[29], choices = sort(unique(availChoices_baseDestination$final_tags)))
+        updatePickerInput(session, "baseDestination", selected = availChoices_baseDestination$final_tags[53], choices = sort(unique(availChoices_baseDestination$final_tags)))
         
       } else if (input$tab %in% c("overview","programme")) {
         
@@ -165,7 +165,8 @@ server <- function(input, output, session) {
 
     # Filter out Journey Table data
     tags <- selection %>% filter(journey=="Y")
-    tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="") # Need to include these in then
+    #tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="") %>% filter(!is.na(date))  # Need to include these in then
+    tags <- tags %>% filter(!is.na(date))
     tags <- tags %>% select(`final_tags`, `date`)
 
     # Filter ID that went to the destination
@@ -227,7 +228,8 @@ server <- function(input, output, session) {
   journey_sankey_df <- reactive({
     # Filter out Journey Table data
     tags <- selection %>% filter(journey=="Y")
-    tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="") # Need to include these in then
+    #tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="") %>% filter(!is.na(date)) # Need to include these in then
+    tags <- tags %>% filter(!is.na(date))
     tags <- tags %>% select(`final_tags`, `date`)
     
     # Add number of events per ID
@@ -1400,7 +1402,8 @@ server <- function(input, output, session) {
     
     # Filter out Journey Table data
     tags <- selection %>% filter(journey=="Y")
-    tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="") # Need to include these in then
+    #tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="") %>% filter(!is.na(date)) # Need to include these in then
+    tags <- tags %>% filter(!is.na(date))
     tags <- tags %>% select(`final_tags`, `date`)
     
     # Add date
