@@ -1,3 +1,6 @@
+# Settings
+options(java.parameters = "- Xmx2048m")
+
 # Library
 library(tidyverse)
 library(readxl)
@@ -262,7 +265,7 @@ load_crm <- function(data_dir) {
   # Combine two data sets
   studentEvent <- eventCsv %>% 
     rbind(eventExcel) %>% 
-    mutate(`UoA ID` = replace(`UoA ID`, `UoA ID` == "EXTERNAL", paste0(`UoA ID`, `ID`))) # Change EXTERNAL to EXTERNAL_randomID
+    mutate(`UoA ID2` = replace(`UoA ID`, `UoA ID` == "EXTERNAL", paste0(`UoA ID`[`UoA ID` == "EXTERNAL"], `ID`[`UoA ID` == "EXTERNAL"]))) # Change EXTERNAL to EXTERNAL_randomID
   
   # Transform to participant programme
   partProg <- studentEvent$Tags %>% 

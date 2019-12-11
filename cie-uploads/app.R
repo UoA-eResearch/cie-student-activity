@@ -1,7 +1,7 @@
 ## CIE Uploads ##
 
 # Settings
-options(java.parameters = "- Xmx1024m")
+options(java.parameters = "- Xmx2048m")
 system("touch app.R")
 
 # libraries
