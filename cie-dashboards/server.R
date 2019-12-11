@@ -1400,8 +1400,13 @@ server <- function(input, output, session) {
 
   output$journeyIndividualHeatmap <- renderPlot({
     df <- journey_map_df() %>% mutate(programme=if_else(programme!=input$baseDestination,paste(date,programme), paste("Destination: ", programme))) 
+    
     df <- df %>% complete(programme=unique(programme), ID=unique(ID)) %>% distinct()
-    df[is.na(df$count),]["count"] <- 0 #Replace NAs with 0
+    
+    if (dim(df[is.na(df$count),])[1] != 0) {
+      df[is.na(df$count),]["count"] <- 0 #Replace NAs with 0
+    }
+    
     df %>%  
       ggplot(aes(ID, fct_rev(programme))) + geom_tile(aes(fill=count)) +
       guides(color=FALSE, fill=FALSE) +
