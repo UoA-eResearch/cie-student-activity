@@ -2,7 +2,7 @@
 
 # Settings
 options(java.parameters = "- Xmx2048m")
-system("touch app.R")
+system("sudo touch app.R")
 
 # libraries
 library(shiny)
@@ -81,6 +81,9 @@ ui <- fluidPage(
                         # Name
                         #textInput("saveName", "Save file name as", placeholder="Enter file name..."),
                         verbatimTextOutput("saveFileName"),
+                        
+                        # Error message
+                        verbatimTextOutput("error"),
                   
                         # Output: Data file ----
                         dataTableOutput("contents")
@@ -95,7 +98,7 @@ server <- function(input, output, session) {
         # Update the filers based on selected year
         observe({
           if (input$saveType %in% c("From Rachel - ", "Members and Training ")) {
-            updateRadioButtons(session, "saveSheet", choices = c(intersect(excel_sheets(input$uploadFile$datapath), c("3D Printer", "Laser Cutter", "3D Scanner", "Vinyl Cutter","CNC Router", "Sewing Machine", "Soldering and Desoldering Stati", "Hand and Power Tools"))))
+            updateRadioButtons(session, "saveSheet", choices = c(intersect(excel_sheets(input$uploadFile$datapath), c("3D Printer", "Laser Cutter", "3D Scanner", "Vinyl Cutter","CNC Router", "Sewing Machine", "Soldering and Desoldering Stati", "Hand and Power Tools", "Student", "Applicant", "No Affil", "No citizenship", "Students"))))
           }
         })
   
@@ -120,28 +123,56 @@ server <- function(input, output, session) {
                         # Import tags_selection.xlsx
                         if (input$saveType == "tags-selection" && "Tags" %in% excel_sheets(uploadPath)) {
                                 df <- read_excel(uploadPath, sheet = "Tags")
+                                
+                                # Check if column names are consistent
+                                columnCondition <- all(colnames(read_excel("../data/base/tags-selection2019 2019-12-05 23:56:11.xlsx") == colnames(df)))
+                                validate(
+                                  need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/tags-selection2019 2019-12-05 23:56:11.xlsx")), colnames(df))))
+                                )
                         }
                         # Import From.*xlsx
-                        else if ( ("Student" %in% excel_sheets(uploadPath) || "Students" %in% excel_sheets(uploadPath))  && input$saveType == "From Rachel - " ) {
+                        else if (input$saveType == "From Rachel - " ) {
                                 if (input$saveSheet %in% c("Student", "Applicant", "No Affil", "No citizenship")) {
+                                  #print(input$saveSheet)
+                                  #print(uploadPath)
                                   df <- read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 2)
+                                  #print(read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 2))
                                   
                                   # Add column names row
                                   cols <- as.data.frame(t(colnames(df)))
                                   colnames(cols) <- colnames(df)
                                   df <- rbind.fill(cols, df)
                                   # Add an empty row
-                                  df <- add_row(df, .before = 1)
+                                  #df <- add_row(df, .before = 1)
+                                  
+                                  # Check if column names are consistent
+                                  columnCondition <- all(colnames(read.xlsx2("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheetName = input$saveSheet, startRow = 2)) == colnames(df))
+                                  validate(
+                                    need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read.xlsx2("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheetName = input$saveSheet, startRow = 2)), colnames(df))))
+                                  )
                                 }
                         }
                         # Import Original.*xlsx
                         else if ( "contacts" %in% excel_sheets(uploadPath) && input$saveType == "Original - ") {
                                 df  <- read_excel(uploadPath)
+                                
+                                # Check if column names are consistent
+                                columnCondition <- all(colnames(read_excel("../data/base/Original - 2016 CIE Participants at 20190708.xlsx") == colnames(df)))
+                                validate(
+                                  need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/Original - 2016 CIE Participants at 20190708.xlsx")), colnames(df))))
+                                )
                         }
                         # Import Member and Training
                         else if ( input$saveType == "Members and Training ") {
                           if ( input$saveSheet %in% c("3D Printer", "Laser Cutter", "3D Scanner", "Vinyl Cutter","CNC Router", "Sewing Machine", "Soldering and Desoldering Stati", "Hand and Power Tools")) {
                                 df <- read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 1)
+                                
+                                # Check if column names are consistent
+                                columnCondition <- all(colnames(read.xlsx2("../data/base/Members and Training 2019 2019-11-22 05:05:06.xlsx", sheetName = input$saveSheet)) == colnames(df))
+                                validate(
+                                  need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read.xlsx2("../data/base/Members and Training 2019 2019-11-22 05:05:06.xlsx", sheetName = input$saveSheet)), colnames(df))))
+                                )
+                                
                           }
                         }
                         # Import C&M Sign In and Innovation Hub Sign In
@@ -149,6 +180,20 @@ server <- function(input, output, session) {
                           #"C&M" = "C&M Space Sign In ",
                           #"INNOVATION" = "Innovation Hub Sign In "
                                 df <- read_excel(uploadPath)
+                                
+                                if (input$saveType == "Innovation Hub Sign In ") {
+                                  # Check if column names are consistent
+                                  columnCondition <- all(colnames(read_excel("../data/base/Innovation Hub Sign In 2019 2019-12-05 21:39:14.xlsx") == colnames(df)))
+                                  validate(
+                                    need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/Innovation Hub Sign In 2019 2019-12-05 21:39:14.xlsx")), colnames(df))))
+                                  )
+                                } else {
+                                  # Check if column names are consistent
+                                  columnCondition <- all(colnames(read_excel("../data/base/C&M Space Sign In 2017 2019-12-05 03:25:16.xlsx") == colnames(df)))
+                                  validate(
+                                    need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/C&M Space Sign In 2017 2019-12-05 03:25:16.xlsx")), colnames(df))))
+                                  )
+                                }
                         }
                 }
                 
@@ -254,7 +299,7 @@ server <- function(input, output, session) {
                         cols <- as.data.frame(t(colnames(df))) # Add column names row
                         colnames(cols) <- colnames(df)
                         df <- rbind.fill(cols, df)
-                        df <- add_row(df, .before = 1) # Add an empty row
+                        #df <- add_row(df, .before = 1) # Add an empty row
                         
                         # Add data frame to the sheet
                         addDataFrame(df, sheet = sheet, startColumn = 1, row.names = FALSE)
