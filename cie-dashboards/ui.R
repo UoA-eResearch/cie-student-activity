@@ -292,32 +292,6 @@ ui <- dashboardPage(
                         tabItem(tabName="velocity", width=NULL,
                                 plotOutput("velocityIwiPlot", height = "400px"))
                  )
-               ),
-               
-               # Studio time series
-               conditionalPanel(
-                 condition = "input.baseProgramme == 'Innovation Hub Studio Participant'",
-                 h3("Studio Time"),
-                 fluidRow(
-                   column(12,
-                          tabItem(tabName="velocity", width=NULL,
-                                  plotlyOutput("velocityStudioTimeseriesPlot", height = "400px"))
-                 )),
-                 pickerInput(
-                   "velocityStudioMonth",
-                   "Month",
-                   selected = sort(unique(allStudio$month))[1:2],
-                   choices = sort(unique(allStudio$month)),
-                   options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
-                   multiple = T
-                 ),
-                 h3(""),
-                 fluidRow(
-                   column(12,
-                          tabItem(tabName="velocity", width=NULL,
-                                  plotOutput("velocityStudioPurposePlot", height = "800px"))
-                 ))
-                 
                )
        ),
 
@@ -410,6 +384,32 @@ ui <- dashboardPage(
                         tabItem(tabName="unleash", width=NULL,
                                 plotOutput("unleashIwiPlot", height = "400px"))
                  )
+               ),
+               
+               # Studio time series
+               conditionalPanel(
+                 condition = "input.baseProgramme == 'Innovation Hub Studio Participant'",
+                 h3("Studio Time"),
+                 fluidRow(
+                   column(12,
+                          tabItem(tabName="unleash", width=NULL,
+                                  plotlyOutput("unleashStudioTimeseriesPlot", height = "400px"))
+                   )),
+                 pickerInput(
+                   "unleashStudioMonth",
+                   "Month",
+                   selected = sort(unique(allStudio$month))[1:2],
+                   choices = sort(unique(allStudio$month)),
+                   options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
+                   multiple = T
+                 ),
+                 h3(""),
+                 fluidRow(
+                   column(12,
+                          tabItem(tabName="unleash", width=NULL,
+                                  plotOutput("unleashStudioPurposePlot", height = "800px"))
+                   ))
+                 
                )
        ),
 
