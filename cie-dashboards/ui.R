@@ -541,7 +541,17 @@ ui <- dashboardPage(
        tabItem(
          tabName = "journey",
          fluidRow(
-           column(12,
+           column(6,
+                  tabItem(tabName = "journey", width=NULL,
+                          pickerInput(
+                            "baseSource",
+                            "Source",
+                            selected="",
+                            choices = sort(unique(availProg$programme)),
+                            options = list(`actions-box` = TRUE, placeholder="Select source..."),
+                            multiple = F
+                          ))),
+           column(6,
                   tabItem(tabName = "journey", width=NULL,
                           pickerInput(
                             "baseDestination",

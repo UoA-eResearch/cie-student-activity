@@ -78,9 +78,10 @@ server <- function(input, output, session) {
       } else if (input$tab == "journey") {
         
         availChoices <- filterData() %>% filter(year %in% input$baseYear) %>% mutate(programme = paste(year, programme)) %>% distinct(programme)
-        availChoices_baseDestination <- selection %>% filter(journey=="Y") %>% filter(year %in% input$baseYear) %>% filter(!grepl("^\\D", date)) %>% distinct(final_tags)
+        availChoices_baseDestination <- selection %>% filter(journey=="Y") %>% filter(!is.na(date)) %>% filter(year %in% input$baseYear) %>% filter(!grepl("^\\D", date)) %>% arrange(date) %>% distinct(final_tags)
         updatePickerInput(session, "baseProgramme", selected = sort(unique(availChoices$programme)), choices = sort(unique(availChoices$programme)))
         updatePickerInput(session, "baseDestination", selected = availChoices_baseDestination$final_tags[53], choices = sort(unique(availChoices_baseDestination$final_tags)))
+        updatePickerInput(session, "baseSource", selected = "", choices = c("",availChoices_baseDestination$final_tags))
         
       } else if (input$tab %in% c("overview","programme")) {
         
@@ -168,8 +169,13 @@ server <- function(input, output, session) {
     tags <- tags %>% filter(!is.na(date))
     tags <- tags %>% select(`final_tags`, `date`)
 
-    # Filter ID that went to the destination
-    selectedIDs <- df %>% filter(programme %in% input$baseDestination) %>% distinct(ID)
+    # Filter ID that went to the destination or source
+    if (input$baseSource != "") {
+      selectedIDs <- df %>% filter(programme %in% input$baseSource) %>% distinct(ID)
+    } else {
+      selectedIDs <- df %>% filter(programme %in% input$baseDestination) %>% distinct(ID)
+    }
+    
     df <- df %>% filter(ID %in% selectedIDs$ID) %>% distinct()
 
     # Remove year
@@ -194,8 +200,14 @@ server <- function(input, output, session) {
     df[is.na(df$count),]["count"] <- 0 # Replace NAs with 0
     
     # Filter events after the destination date
-    filteredDate <- selection[selection$final_tags==input$baseDestination,]$date
-    df <- df %>% filter(!date >filteredDate) %>% distinct()
+    if (input$baseSource != "") {
+      filteredDate <- selection[selection$final_tags==input$baseSource,]$date
+      df <- df %>% filter(!date <filteredDate) %>% distinct()
+    } else {
+      filteredDate <- selection[selection$final_tags==input$baseDestination,]$date
+      df <- df %>% filter(!date >filteredDate) %>% distinct()
+    }
+    
     
     return(df)
   })
@@ -212,8 +224,13 @@ server <- function(input, output, session) {
     df <- merge(df, df_total_event, by = "ID")
     
     # Sorting events, remove destination
-    sortedProg <- df %>% distinct(programme,date) %>% filter(programme!=input$baseDestination) %>% arrange(date) %>% distinct(programme)
-    sortedProg <- c("total", "num_students", sortedProg$programme, input$baseDestination)
+    if (input$baseSource != "") {
+      sortedProg <- df %>% distinct(programme,date) %>% filter(programme!=input$baseSource) %>% arrange(date) %>% distinct(programme)
+      sortedProg <- c("total", "num_students", input$baseSource, sortedProg$programme)
+    } else {
+      sortedProg <- df %>% distinct(programme,date) %>% filter(programme!=input$baseDestination) %>% arrange(date) %>% distinct(programme)
+      sortedProg <- c("total", "num_students", sortedProg$programme, input$baseDestination)
+    }
     
     # Spread
     df <- df %>% spread(key=programme, value = count)
@@ -1399,7 +1416,11 @@ server <- function(input, output, session) {
   })
 
   output$journeyIndividualHeatmap <- renderPlot({
-    df <- journey_map_df() %>% mutate(programme=if_else(programme!=input$baseDestination,paste(date,programme), paste("Destination: ", programme))) 
+    if (input$baseSource != "") {
+      df <- journey_map_df() %>% mutate(programme=paste(date,programme))
+    } else {
+      df <- journey_map_df() %>% mutate(programme=if_else(programme!=input$baseDestination,paste(date,programme), paste("Destination: ", programme))) 
+    }
     
     df <- df %>% complete(programme=unique(programme), ID=unique(ID)) %>% distinct()
     
