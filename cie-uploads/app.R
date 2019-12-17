@@ -117,6 +117,40 @@ server <- function(input, output, session) {
                 if (file_ext(uploadPath) == "csv") {
 
                         df <- read_csv(uploadPath)
+                        
+                        if (input$saveType == "tags-selection") {
+                          
+                          # Check if column names are consistent
+                          columnCondition <- all(sort(colnames(read_excel("../data/base/tags-selection2019 2019-12-05 23:56:11.xlsx"))) == sort(colnames(df)))
+                          validate(
+                            need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/tags-selection2019 2019-12-05 23:56:11.xlsx")), colnames(df))))
+                          )
+                          
+                        } else if (input$saveType == "Original - ") {
+                          
+                          # Check if column names are consistent
+                          columnCondition <- all(sort(colnames(read_excel("../data/base/Original - 2016 CIE Participants at 20190708.xlsx"))) == sort(colnames(df)))
+                          validate(
+                            need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/Original - 2016 CIE Participants at 20190708.xlsx")), colnames(df))))
+                          )
+                          
+                        } else if (input$saveType == "C&M Space Sign In ") {
+                          
+                          # Check if column names are consistent
+                          columnCondition <- all(sort(colnames(read_excel("../data/base/C&M Space Sign In 2017 2019-12-05 03:25:16.xlsx"))) == sort(colnames(df)))
+                          validate(
+                            need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/C&M Space Sign In 2017 2019-12-05 03:25:16.xlsx")), colnames(df))))
+                          )
+                          
+                        } else if (input$saveType == "Innovation Hub Sign In ") {
+                          
+                          # Check if column names are consistent
+                          columnCondition <- all(sort(colnames(read_excel("../data/base/Innovation Hub Sign In 2019 2019-12-05 21:39:14.xlsx"))) == sort(colnames(df)))
+                          validate(
+                            need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/Innovation Hub Sign In 2019 2019-12-05 21:39:14.xlsx")), colnames(df))))
+                          )
+                          
+                        }
 
                 } else if (file_ext(uploadPath) == "xlsx") {
                         
@@ -182,17 +216,21 @@ server <- function(input, output, session) {
                                 df <- read_excel(uploadPath)
                                 
                                 if (input$saveType == "Innovation Hub Sign In ") {
+                                  
                                   # Check if column names are consistent
                                   columnCondition <- all(sort(colnames(read_excel("../data/base/Innovation Hub Sign In 2019 2019-12-05 21:39:14.xlsx"))) == sort(colnames(df)))
                                   validate(
                                     need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/Innovation Hub Sign In 2019 2019-12-05 21:39:14.xlsx")), colnames(df))))
                                   )
+                                  
                                 } else {
+                                  
                                   # Check if column names are consistent
                                   columnCondition <- all(sort(colnames(read_excel("../data/base/C&M Space Sign In 2017 2019-12-05 03:25:16.xlsx"))) == sort(colnames(df)))
                                   validate(
                                     need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/C&M Space Sign In 2017 2019-12-05 03:25:16.xlsx")), colnames(df))))
                                   )
+                                  
                                 }
                         }
                 }
