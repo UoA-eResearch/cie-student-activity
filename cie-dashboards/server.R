@@ -253,7 +253,6 @@ server <- function(input, output, session) {
   journey_sankey_df <- reactive({
     # Filter out Journey Table data
     tags <- selection %>% filter(journey=="Y")
-    #tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="") %>% filter(!is.na(date)) # Need to include these in then
     tags <- tags %>% filter(!is.na(date))
     tags <- tags %>% select(`final_tags`, `date`)
     
@@ -274,7 +273,11 @@ server <- function(input, output, session) {
     colnames(df_not_single_lag) <- c("source.programme", "target.programme", "ID", "date")
 
     df_single_lag <- df_single_lag %>% select(programme, source.programme, ID, date)
-    colnames(df_single_lag) <- c("target.programme", "source.programme", "ID", "date")
+    if (input$baseSource == "") {
+      colnames(df_single_lag) <- c("target.programme", "source.programme", "ID", "date")
+    } else {
+      colnames(df_single_lag) <- c("source.programme", "target.programme", "ID", "date")
+    }
     df_lag <- rbind(df_single_lag, df_not_single_lag)
 
     # Sum counts grouped by target and source
