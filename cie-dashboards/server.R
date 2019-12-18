@@ -78,7 +78,11 @@ server <- function(input, output, session) {
       } else if (input$tab == "journey") {
         
         availChoices <- filterData() %>% filter(year %in% input$baseYear) %>% mutate(programme = paste(year, programme)) %>% distinct(programme)
+        availTraining <- all_training %>% mutate(year=format(date, "%Y")) %>% filter(year %in% input$baseYear) %>% distinct(programme)
+        availStudio <- all_studio %>% filter(year %in% input$baseYear) %>% distinct(programme)
+        availChoices <- bind_rows(availChoices, availTraining, availStudio)
         availChoices_baseDestination <- selection %>% filter(journey=="Y") %>% filter(!is.na(date)) %>% filter(year %in% input$baseYear) %>% filter(!grepl("^\\D", date)) %>% arrange(date) %>% distinct(final_tags)
+        
         updatePickerInput(session, "baseProgramme", selected = sort(unique(availChoices$programme)), choices = sort(unique(availChoices$programme)))
         updatePickerInput(session, "baseDestination", selected = availChoices_baseDestination$final_tags[53], choices = sort(unique(availChoices_baseDestination$final_tags)))
         updatePickerInput(session, "baseSource", selected = "", choices = c("",availChoices_baseDestination$final_tags))
@@ -175,11 +179,7 @@ server <- function(input, output, session) {
     } else {
       selectedIDs <- df %>% filter(programme %in% input$baseDestination) %>% distinct(ID)
     }
-    
     df <- df %>% filter(ID %in% selectedIDs$ID) %>% distinct()
-
-    # Remove year
-    df <- df %>% select(-year)
     
     # Add count
     df$count <- 1
@@ -189,12 +189,17 @@ server <- function(input, output, session) {
     df <- merge(df, tags, by.x="programme", by.y="final_tags", all.x = TRUE) %>% distinct() # Add date
     
     # Add all_training dfs
-    training_df <- all_training %>% filter(ID %in% selectedIDs$ID)  %>% mutate(count=1) #%>% select(training, ID, count, date)
+    training_df <- all_training %>% filter(ID %in% selectedIDs$ID)  %>% mutate(count=1, year=format(date, "%Y")) #%>% select(training, ID, count, date)
     df <- rbind(df, training_df)
     
     # Add all_studio dfs
-    studio_df <- all_studio %>% filter(ID %in% selectedIDs$ID)  %>% mutate(count=1) %>% select(programme, ID, count, date)
+    studio_df <- all_studio %>% filter(ID %in% selectedIDs$ID)  %>% mutate(count=1) %>% select(programme, ID, count, date, year)
     df <- rbind(df, studio_df)
+    
+    # Filter year and programme
+    df <- df %>%
+      filter(year %in% input$baseYear) %>%
+      filter(programme %in% input$baseProgramme)
     
     df <- df %>% complete(programme=unique(programme), ID=unique(ID)) %>% distinct() # Fill in empty cells
     df[is.na(df$count),]["count"] <- 0 # Replace NAs with 0
@@ -208,7 +213,7 @@ server <- function(input, output, session) {
       df <- df %>% filter(!date >filteredDate) %>% distinct()
     }
     
-    
+    #print(unique(df$programme))
     return(df)
   })
   
