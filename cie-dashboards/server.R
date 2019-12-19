@@ -115,17 +115,19 @@ server <- function(input, output, session) {
         filter(programme %in% input$baseProgramme)
     } else {
       df <- filterData() %>% 
-        distinct(ID,year,programme) %>% # Remove people who are conjoints
-        filter(!programme %in% c("CIE Participant"))
+        distinct(ID,year,programme) #%>% # Remove people who are conjoints
+        #filter(!programme %in% c("CIE Participant"))
     }
     return(df)
   })
+  
   facultyPlot_df <- reactive({
     df <- filterData() %>%
       filter(year %in% input$baseYear) %>% 
       distinct(ID,year, `Owner.of.Major.Spec.Module`)
     return(df)
   })
+  
   programmePlot_df <- reactive({
     df <- filterData() %>%
       filter(year %in% input$baseYear) %>% 
@@ -134,6 +136,7 @@ server <- function(input, output, session) {
       summarise(count=n())
     return(df)
   })
+  
   generalPlot_df <- reactive({
     if (!input$tab %in% c("overview")) {
         df <- filterData() %>% 
@@ -142,12 +145,14 @@ server <- function(input, output, session) {
         return(df)
     }
   })
+  
   heatmap_df <- reactive({
     df <- filterData() %>% 
       filter(year %in% c(input$baseYear)) %>%
       distinct(ID, year, `Owner.of.Major.Spec.Module`, `programme`)
     return(df)
   })
+  
   debug_df <- reactive({
     df <- filterData() %>% 
       filter(year %in% input$baseYear) %>% 
@@ -295,6 +300,7 @@ server <- function(input, output, session) {
   ## Overview Dashboard
   output$totalPlot <- renderPlot({
     overviewPlot_df() %>% 
+      filter(!programme %in% c("CIE Participant")) %>% 
       select(ID,year) %>%
       group_by(year) %>% 
       summarise(count=n()) %>% 
