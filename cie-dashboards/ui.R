@@ -60,7 +60,7 @@ ui <- dashboardPage(
                 "Programme",
                 selected="CIE Participant",
                 choices = sort(unique(availProg$programme)),
-                options = list(`actions-box` = TRUE, placeholder="Select programme..."),
+                options = list(`actions-box` = TRUE, placeholder="Select programme...", `live-search` = TRUE),
                 multiple = T)
      )
    ),
@@ -140,7 +140,7 @@ ui <- dashboardPage(
                  "Faculty",
                  selected="Engineering",
                  choices = sort(unique(availProg$`Owner.of.Major.Spec.Module`)),
-                 options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
+                 options = list(`actions-box` = TRUE, placeholder="Select faculty...", `live-search` = TRUE),
                  multiple = T
                ),
                fluidRow(
@@ -164,7 +164,7 @@ ui <- dashboardPage(
                  "Affiliation",
                  selected="Undergraduate",
                  choices = sort(unique(availProg$`Programme.Level`)),
-                 options = list(`actions-box` = TRUE, placeholder="Select affiliation..."),
+                 options = list(`actions-box` = TRUE, placeholder="Select affiliation...", `live-search` = TRUE),
                  multiple = T
                ),
                fluidRow(
@@ -234,7 +234,7 @@ ui <- dashboardPage(
                  "Faculty",
                  selected="Engineering",
                  choices = sort(unique(availProg$`Owner.of.Major.Spec.Module`)),
-                 options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
+                 options = list(`actions-box` = TRUE, placeholder="Select faculty...", `live-search` = TRUE),
                  multiple = T
                ),
                fluidRow(
@@ -258,7 +258,7 @@ ui <- dashboardPage(
                  "Affiliation",
                  selected="Undergraduate",
                  choices = sort(unique(availProg$`Programme.Level`)),
-                 options = list(`actions-box` = TRUE, placeholder="Select affiliation..."),
+                 options = list(`actions-box` = TRUE, placeholder="Select affiliation...", `live-search` = TRUE),
                  multiple = T
                ),
                fluidRow(
@@ -326,7 +326,7 @@ ui <- dashboardPage(
                  "Faculty",
                  selected="Engineering",
                  choices = sort(unique(availProg$`Owner.of.Major.Spec.Module`)),
-                 options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
+                 options = list(`actions-box` = TRUE, placeholder="Select faculty...", `live-search` = TRUE),
                  multiple = T
                ),
                fluidRow(
@@ -350,7 +350,7 @@ ui <- dashboardPage(
                  "Affiliation",
                  selected="Undergraduate",
                  choices = sort(unique(availProg$`Programme.Level`)),
-                 options = list(`actions-box` = TRUE, placeholder="Select affiliation..."),
+                 options = list(`actions-box` = TRUE, placeholder="Select affiliation...", `live-search` = TRUE),
                  multiple = T
                ),
                fluidRow(
@@ -400,7 +400,7 @@ ui <- dashboardPage(
                    "Month",
                    selected = sort(unique(allStudio$month))[1:2],
                    choices = sort(unique(allStudio$month)),
-                   options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
+                   options = list(`actions-box` = TRUE, placeholder="Select faculty...", `live-search` = TRUE),
                    multiple = T
                  ),
                  h3(""),
@@ -444,7 +444,7 @@ ui <- dashboardPage(
                  "Faculty",
                  selected="Engineering",
                  choices = sort(unique(availProg$`Owner.of.Major.Spec.Module`)),
-                 options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
+                 options = list(`actions-box` = TRUE, placeholder="Select faculty...", `live-search` = TRUE),
                  multiple = T
                ),
                fluidRow(
@@ -468,7 +468,7 @@ ui <- dashboardPage(
                  "Affiliation",
                  selected="Undergraduate",
                  choices = sort(unique(availProg$`Programme.Level`)),
-                 options = list(`actions-box` = TRUE, placeholder="Select affiliation..."),
+                 options = list(`actions-box` = TRUE, placeholder="Select affiliation...", `live-search` = TRUE),
                  multiple = T
                ),
                fluidRow(
@@ -518,7 +518,7 @@ ui <- dashboardPage(
                    "Month",
                    selected = sort(unique(allStudio$month))[1:2],
                    choices = sort(unique(allStudio$month)),
-                   options = list(`actions-box` = TRUE, placeholder="Select faculty..."),
+                   options = list(`actions-box` = TRUE, placeholder="Select faculty...", `live-search` = TRUE),
                    multiple = T
                  ),
                  h3(""),
@@ -548,7 +548,7 @@ ui <- dashboardPage(
                             "Source",
                             selected="",
                             choices = sort(unique(availProg$programme)),
-                            options = list(`actions-box` = TRUE, placeholder="Select source..."),
+                            options = list(`actions-box` = TRUE, placeholder="Select source...", `live-search`=TRUE),
                             multiple = F
                           ))),
            column(6,
@@ -558,7 +558,7 @@ ui <- dashboardPage(
                             "Destination",
                             selected="",
                             choices = sort(unique(availProg$programme)),
-                            options = list(`actions-box` = TRUE, placeholder="Select destination..."),
+                            options = list(`actions-box` = TRUE, placeholder="Select destination...", `live-search`=TRUE),
                             multiple = F
                           ))),
            column(12,
