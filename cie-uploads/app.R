@@ -129,7 +129,8 @@ server <- function(input, output, session) {
                         } else if (input$saveType == "Original - ") {
                           
                           # Check if column names are consistent
-                          columnCondition <- all(sort(colnames(read_excel("../data/base/Original - 2016 CIE Participants at 20190708.xlsx"))) == sort(colnames(df)))
+                          columnCondition <- any(all(sort(colnames(read_excel("../data/base/Original - 2016 CIE Participants at 20190708.xlsx"))) == sort(colnames(df))),
+                                                 all(sort(colnames(read_csv("../data/base/Original - 2017 CIE Participant - downloaded 10 July.csv"))) == sort(colnames(df))))
                           validate(
                             need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/Original - 2016 CIE Participants at 20190708.xlsx")), colnames(df))))
                           )
@@ -155,7 +156,14 @@ server <- function(input, output, session) {
                 } else if (file_ext(uploadPath) == "xlsx") {
                         
                         # Import tags_selection.xlsx
-                        if (input$saveType == "tags-selection" && "Tags" %in% excel_sheets(uploadPath)) {
+                        if (input$saveType == "tags-selection") {
+                                # Check if there is a sheet named Tag
+                                sheetCondition <- "Tags" %in% excel_sheets(uploadPath)
+                                validate(
+                                  need(sheetCondition==TRUE, message="TAG file needs sheet named 'Tags'")
+                                )
+                                
+                                # Read in dataframe
                                 df <- read_excel(uploadPath, sheet = "Tags")
                                 
                                 # Check if column names are consistent
@@ -167,8 +175,6 @@ server <- function(input, output, session) {
                         # Import From.*xlsx
                         else if (input$saveType == "From Rachel - " ) {
                                 if (input$saveSheet %in% c("Student", "Applicant", "No Affil", "No citizenship")) {
-                                  #print(input$saveSheet)
-                                  #print(uploadPath)
                                   df <- read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 2)
                                   #print(read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 2))
                                   
@@ -184,10 +190,19 @@ server <- function(input, output, session) {
                                   validate(
                                     need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read.xlsx2("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheetName = input$saveSheet, startRow = 2)), colnames(df))))
                                   )
+                                  
                                 }
                         }
+                  
                         # Import Original.*xlsx
-                        else if ( "contacts" %in% excel_sheets(uploadPath) && input$saveType == "Original - ") {
+                        else if (input$saveType == "Original - ") {
+                          
+                                # Check if sheet names are correct
+                                validate(
+                                  need("contacts" %in% excel_sheets(uploadPath), message = "CRM file needs at least one sheet named 'contacts'")
+                                )
+                          
+                                # Read in dataframe
                                 df  <- read_excel(uploadPath)
                                 
                                 # Check if column names are consistent
@@ -197,8 +212,8 @@ server <- function(input, output, session) {
                                 )
                         }
                         # Import Member and Training
-                        else if ( input$saveType == "Members and Training ") {
-                          if ( input$saveSheet %in% c("3D Printer", "Laser Cutter", "3D Scanner", "Vinyl Cutter","CNC Router", "Sewing Machine", "Soldering and Desoldering Stati", "Hand and Power Tools")) {
+                        else if (input$saveType == "Members and Training ") {
+                          if (input$saveSheet %in% c("3D Printer", "Laser Cutter", "3D Scanner", "Vinyl Cutter","CNC Router", "Sewing Machine", "Soldering and Desoldering Stati", "Hand and Power Tools")) {
                                 df <- read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 1)
                                 
                                 # Check if column names are consistent
@@ -210,9 +225,14 @@ server <- function(input, output, session) {
                           }
                         }
                         # Import C&M Sign In and Innovation Hub Sign In
-                        else if ("Form Responses 1" %in% excel_sheets(uploadPath) && input$saveType %in% c("C&M Space Sign In ", "Innovation Hub Sign In ")) {
-                          #"C&M" = "C&M Space Sign In ",
-                          #"INNOVATION" = "Innovation Hub Sign In "
+                        else if (input$saveType %in% c("C&M Space Sign In ", "Innovation Hub Sign In ")) {
+                                
+                                # Check if sheet names are correct
+                                validate(
+                                  need("Form Responses 1" %in% excel_sheets(uploadPath), "File needs at laste one sheet named 'Form Responses 1'")
+                                )
+                                
+                                # Read in data frame
                                 df <- read_excel(uploadPath)
                                 
                                 if (input$saveType == "Innovation Hub Sign In ") {

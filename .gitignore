@@ -11,6 +11,8 @@ docs/*
 tags
 tags/*
 
+backup_data/
+
 # Example code in package build process
 *-Ex.R
 
