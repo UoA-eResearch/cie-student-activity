@@ -1,5 +1,5 @@
 # Settings
-options(java.parameters = "- Xmx2048m")
+options(java.parameters = "-Xmx2G")
 
 # Library
 library(tidyverse)
@@ -144,7 +144,7 @@ load_sso <- function(data_dir) {
   ##  Student sheet
   # Get column types
   c <- sapply(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = "Student", skip = 1), class)
-  c["Birthdate"] <- "POSIXct"
+  c["Birthdate"] <- "integer"
   # Read and clean sheet
   student <- tibble(updated = basename(dirname(files[1])), filename = files[1]) %>% 
     mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c, stringsAsFactors = FALSE))) %>% 
@@ -177,6 +177,10 @@ load_sso <- function(data_dir) {
     select(-`Birthdate`)
   # Change values for "Alumni"
   student[which(student$Status == "Completed Programme"),][c('Programme.Level', 'Descriptio', 'Owner.of.Major.Spec.Module')] <- "ALUMNI"
+  # Consistent sex
+  student$Sex[student$Sex == "F"] <- "Female"
+  student$Sex[student$Sex == "M"] <- "Male"
+  student$Sex[student$Sex == "D"] <- "Diverse"
   
   ## Applicant sheet
   # Get excel workbooks that have "Applicant" sheet
