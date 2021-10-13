@@ -212,8 +212,10 @@ load_sso <- function(data_dir) {
   colnames(affil)[5:7] <- c("Ethnicity", "Residency.Status", "Ethnic.Group")
   # Change values
   affil$Residency.Status[affil$Residency.Status!="NZL"] <- "International"
+  # Consistent sex
   affil$Sex[affil$Sex == "F"] <- "Female"
   affil$Sex[affil$Sex == "M"] <- "Male"
+  affil$Sex[affil$Sex == "D"] <- "Diverse"
   # Set NAs to EXTERNAL
   newCols <- setdiff(colnames(student), colnames(affil))
   affil[newCols] <- "STAFF"
@@ -231,6 +233,10 @@ load_sso <- function(data_dir) {
   # Set NAs to EXTERNAL
   newCols <- setdiff(colnames(student), colnames(citizenship))
   citizenship[newCols] <- "STAFF"
+  # Consistent sex
+  citizenship$Sex[citizenship$Sex == "F"] <- "Female"
+  citizenship$Sex[citizenship$Sex == "M"] <- "Male"
+  citizenship$Sex[citizenship$Sex == "D"] <- "Diverse"
   
   
   # Merge all sheets data
