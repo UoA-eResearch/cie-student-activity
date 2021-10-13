@@ -61,7 +61,13 @@ ui <- dashboardPage(
                 selected="CIE Participant",
                 choices = sort(unique(availProg$programme)),
                 options = list(`actions-box` = TRUE, placeholder="Select programme...", `live-search` = TRUE),
-                multiple = T)
+                multiple = T),
+        pickerInput(
+          "Gender",
+          "Gender",
+          choices = sort(unique(availProg$Sex)),
+          options = list(`actions-box` = TRUE, placeholder="Select genders..."),
+          multiple = T)
      )
    ),
 
