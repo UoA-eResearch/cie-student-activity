@@ -27,6 +27,29 @@ availProg <- selection %>%
 availProg <- allData %>% 
         filter(programme %in% availProg$tag_programme)
 
+filtermap = list(
+  "Gender" = "Sex",
+  "Ethnic Group" = "Ethnic.Group",
+  "Ethnicity" = "Ethnicity",
+  "Iwi" = "Descr",
+  "Faculty" = "Owner.of.Major.Spec.Module",
+  "Department" = "Plan.Description",
+  "Affiliation" = "Programme.Level",
+  "Residency" = "Residency.Status"
+)
+
+pickers = c()
+for (label in names(filtermap)) {
+  key = filtermap[[label]]
+  pickers[[length(pickers) + 1]] = pickerInput(
+    key,
+    label,
+    choices = sort(unique(availProg[[key]])),
+    options = list(`actions-box` = TRUE, placeholder=paste("Select", label, "...")),
+    multiple = T,
+  )
+}
+
 ui <- dashboardPage(
    # Application title
    dashboardHeader(title = "CIE Dashboard"),
@@ -62,12 +85,7 @@ ui <- dashboardPage(
                 choices = sort(unique(availProg$programme)),
                 options = list(`actions-box` = TRUE, placeholder="Select programme...", `live-search` = TRUE),
                 multiple = T),
-        pickerInput(
-          "Gender",
-          "Gender",
-          choices = sort(unique(availProg$Sex)),
-          options = list(`actions-box` = TRUE, placeholder="Select genders..."),
-          multiple = T)
+        pickers
      )
    ),
 

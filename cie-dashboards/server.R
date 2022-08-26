@@ -15,6 +15,17 @@ library(plotly)
 library(shinyWidgets)
 library(networkD3)
 
+filtermap = list(
+  "Gender" = "Sex",
+  "Ethnic Group" = "Ethnic.Group",
+  "Ethnicity" = "Ethnicity",
+  "Iwi" = "Descr",
+  "Faculty" = "Owner.of.Major.Spec.Module",
+  "Department" = "Plan.Description",
+  "Affiliation" = "Programme.Level",
+  "Residency" = "Residency.Status"
+)
+
 # Functions
 filter_data <- function(dashboard, data_df, selection_df) {
   # Filter programmes based on tab names
@@ -142,9 +153,13 @@ server <- function(input, output, session) {
         df <- filterData() %>% 
           filter(year %in% input$baseYear) %>% 
           filter(programme %in% input$baseProgramme)
-        if (length(input$Gender) > 1) {
-          df <- df %>%
-            filter(Sex %in% input$Gender)
+        for (label in names(filtermap)) {
+          key = filtermap[[label]]
+          if (length(input[[key]]) >= 1) {
+            print(paste("Filtering", key, label, input[[key]]))
+            df <- df %>%
+              filter(df[[key]] %in% input[[key]])
+          }
         }
         return(df)
     }
@@ -445,7 +460,7 @@ server <- function(input, output, session) {
   })
   
   output$programmeFacultyPlot <- renderPlot({
-    if (length(input$Gender)>1) {
+    if (length(input$Sex)>1) {
       generalPlot_df() %>% 
         select(ID, Sex, programme, `Owner.of.Major.Spec.Module`) %>% 
         distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
@@ -520,7 +535,7 @@ server <- function(input, output, session) {
   })
   
   output$programmeAffiliationPlot <- renderPlot({
-    if (length(input$Gender)>1) {
+    if (length(input$Sex)>1) {
       generalPlot_df() %>% 
         select(ID, Sex, programme, `Programme.Level`) %>% 
         distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
@@ -558,7 +573,7 @@ server <- function(input, output, session) {
   })
   
   output$programmeDegreePlot <- renderPlotly({
-    if (length(input$Gender)>1) {
+    if (length(input$Sex)>1) {
       generalPlot_df() %>%
         filter(`Programme.Level` %in% input$programmeAffiliationDegree) %>% # Filter selected
         select(ID, Sex, programme, `Descriptio`, `Programme.Level`) %>%
