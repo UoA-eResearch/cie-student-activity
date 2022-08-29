@@ -23,7 +23,8 @@ filtermap = list(
   "Faculty" = "Owner.of.Major.Spec.Module",
   "Department" = "Plan.Description",
   "Affiliation" = "Programme.Level",
-  "Residency" = "Residency.Status"
+  "Residency" = "Residency.Status",
+  "Year" = "year"
 )
 
 # Functions
@@ -460,40 +461,27 @@ server <- function(input, output, session) {
   })
   
   output$programmeFacultyPlot <- renderPlot({
-    if (length(input$Sex)>1) {
-      generalPlot_df() %>% 
-        select(ID, Sex, programme, `Owner.of.Major.Spec.Module`) %>% 
-        distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
-        group_by(`Owner.of.Major.Spec.Module`, Sex, programme) %>% 
-        summarise(count=n()) %>% 
-        group_by(Sex, programme) %>% 
-        mutate(sum_count=sum(count)) %>% 
-        ggplot(aes(x=reorder(`Owner.of.Major.Spec.Module`, -count), y=count, label=count, fill=factor(Sex), colour=factor(Sex))) +
-        geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-        geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(Sex)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
-        geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-        facet_wrap(programme~., ncol=3) +
-        ggtitle("Faculty") +
-        theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-        theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
-        scale_fill_tableau() + scale_colour_tableau()
-    } else {
-      generalPlot_df() %>% 
-        select(ID, year, programme, `Owner.of.Major.Spec.Module`) %>% 
-        distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
-        group_by(`Owner.of.Major.Spec.Module`, year, programme) %>% 
-        summarise(count=n()) %>%
-        group_by(year, programme) %>% 
-        mutate(sum_count=sum(count)) %>% 
-        ggplot(aes(x=reorder(`Owner.of.Major.Spec.Module`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
-        geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-        geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
-        geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-        facet_wrap(programme~., ncol=3) +
-        ggtitle("Faculty") +
-        theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-        theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
-        scale_fill_tableau() + scale_colour_tableau()
+    for (label in names(filtermap)) {
+      key = filtermap[[label]]
+      if (length(input[[key]]) >= 1 || key == "year") {
+        key = sym(key)
+        return(generalPlot_df() %>% 
+          select(ID, !!key, programme, `Owner.of.Major.Spec.Module`) %>% 
+          distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
+          group_by(`Owner.of.Major.Spec.Module`, !!key, programme) %>% 
+          summarise(count=n()) %>% 
+          group_by(!!key, programme) %>% 
+          mutate(sum_count=sum(count)) %>% 
+          ggplot(aes(x=reorder(`Owner.of.Major.Spec.Module`, -count), y=count, label=count, fill=factor(!!key), colour=factor(!!key))) +
+          geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+          geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(!!key)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
+          geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+          facet_wrap(programme~., ncol=3) +
+          ggtitle("Faculty") +
+          theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+          theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+          scale_fill_tableau() + scale_colour_tableau())
+      }
     }
   })
   
@@ -535,53 +523,47 @@ server <- function(input, output, session) {
   })
   
   output$programmeAffiliationPlot <- renderPlot({
-    if (length(input$Sex)>1) {
-      generalPlot_df() %>% 
-        select(ID, Sex, programme, `Programme.Level`) %>% 
-        distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
-        group_by(`Programme.Level`, Sex, programme) %>% 
-        summarise(count=n()) %>% 
-        group_by(Sex, programme) %>% 
-        mutate(sum_count=sum(count)) %>% 
-        ggplot(aes(x=reorder(`Programme.Level`, -count), y=count, label=count, fill=factor(Sex), colour=factor(Sex))) +
-        geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-        geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-        geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(Sex)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
-        facet_wrap(programme~., ncol=3) +
-        ggtitle("Affiliation") +
-        theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-        theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
-        scale_fill_tableau() + scale_colour_tableau()
-    } else {
-      generalPlot_df() %>% 
-        select(ID, year, programme, `Programme.Level`) %>% 
-        distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
-        group_by(`Programme.Level`, year, programme) %>% 
-        summarise(count=n()) %>% 
-        group_by(year, programme) %>% 
-        mutate(sum_count=sum(count)) %>% 
-        ggplot(aes(x=reorder(`Programme.Level`, -count), y=count, label=count, fill=factor(year), colour=factor(year))) +
-        geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-        geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-        geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(year)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
-        facet_wrap(programme~., ncol=3) +
-        ggtitle("Affiliation") +
-        theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-        theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
-        scale_fill_tableau() + scale_colour_tableau()
+    for (label in names(filtermap)) {
+      key = filtermap[[label]]
+      if (length(input[[key]]) >= 1 || key == "year") {
+        key = sym(key)
+        return (generalPlot_df() %>% 
+          select(ID, !!key, programme, `Programme.Level`) %>% 
+          distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
+          group_by(`Programme.Level`, !!key, programme) %>% 
+          summarise(count=n()) %>% 
+          group_by(!!key, programme) %>% 
+          mutate(sum_count=sum(count)) %>% 
+          ggplot(aes(x=reorder(`Programme.Level`, -count), y=count, label=count, fill=factor(!!key), colour=factor(!!key))) +
+          geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+          geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+          geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(!!key)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
+          facet_wrap(programme~., ncol=3) +
+          ggtitle("Affiliation") +
+          theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+          theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+          scale_fill_tableau() + scale_colour_tableau())
+      }
     }
   })
   
   output$programmeDegreePlot <- renderPlotly({
-    if (length(input$Sex)>1) {
+    key = ""
+    for (label in names(filtermap)) {
+      this_key = filtermap[[label]]
+      if (length(input[[this_key]]) >= 1) {
+        key = sym(this_key)
+      }
+    }
+    if (length(key)) {
       generalPlot_df() %>%
         filter(`Programme.Level` %in% input$programmeAffiliationDegree) %>% # Filter selected
-        select(ID, Sex, programme, `Descriptio`, `Programme.Level`) %>%
-        group_by(Sex, programme ,`Descriptio`, `Programme.Level`) %>%
+        select(ID, !!key, programme, `Descriptio`, `Programme.Level`) %>%
+        group_by(!!key, programme ,`Descriptio`, `Programme.Level`) %>%
         summarise(count=n(), ymin=min(count), ymax=max(count)) %>%
         group_by(programme , `Descriptio`, `Programme.Level`) %>%
         mutate(ymin=min(count), ymax=max(count)) %>% 
-        ggplot(aes(x=reorder(`Descriptio`, count), xend=reorder(`Descriptio`, count), y=count, yend=count, label=count, fill=factor(Sex), colour=factor(Sex))) +
+        ggplot(aes(x=reorder(`Descriptio`, count), xend=reorder(`Descriptio`, count), y=count, yend=count, label=count, fill=factor(!!key), colour=factor(!!key))) +
         geom_segment(aes(y=ymin, yend=ymax), color="grey") +
         geom_point(size=4, alpha=1) +
         geom_text(color="white", size=2) +
@@ -590,8 +572,7 @@ server <- function(input, output, session) {
         ggtitle("Degree") +
         theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
         scale_fill_tableau() + scale_colour_tableau()
-    }
-    else if (length(input$baseYear)>1) {
+    } else if (length(input$baseYear)>1) {
       generalPlot_df() %>%
         filter(`Programme.Level` %in% input$programmeAffiliationDegree) %>% # Filter selected
         select(ID, year, programme, `Descriptio`, `Programme.Level`) %>%
