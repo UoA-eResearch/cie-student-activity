@@ -41,11 +41,12 @@ filtermap = list(
 pickers = c()
 for (label in names(filtermap)) {
   key = filtermap[[label]]
+  choices = sort(unique(availProg[[key]]))
   pickers[[length(pickers) + 1]] = pickerInput(
     key,
     label,
-    choices = sort(unique(availProg[[key]])),
-    options = list(`actions-box` = TRUE, placeholder=paste("Select", label, "...")),
+    choices = choices,
+    options = list(`actions-box` = TRUE, placeholder=paste("Select", label, "..."), `live-search` = length(choices) > 10),
     multiple = T,
   )
 }
@@ -641,6 +642,83 @@ ui <- dashboardPage(
            column(6,
                   tabItem(tabName="curricula", width=NULL,
                           plotOutput("curriculaRepeatPlot", height = "300px"))
+           )
+         ),
+         
+         # Faculty split
+         h3(""),
+         fluidRow(
+           column(12,
+                  tabItem(tabName="curricula", width=NULL,
+                          plotOutput("curriculaFacultyPlot", height = "600px"))
+           )
+         ),
+         
+         # Department split
+         pickerInput(
+           "curriculaFacultyDepartment",
+           "Faculty",
+           selected="Engineering",
+           choices = sort(unique(availProg$`Owner.of.Major.Spec.Module`)),
+           options = list(`actions-box` = TRUE, placeholder="Select faculty...", `live-search` = TRUE),
+           multiple = T
+         ),
+         fluidRow(
+           column(12,
+                  tabItem(tabName="curricula", width=NULL,
+                          plotlyOutput("curriculaDepartmentPlot", height="800px"))
+           )
+         ),
+         
+         # Affiliation Split
+         h3(""),
+         fluidRow(
+           column(12,
+                  tabItem(tabName="curricula", width=NULL,
+                          plotOutput("curriculaAffiliationPlot", height = "600px"))
+           )
+         ),
+         # Degree split
+         pickerInput(
+           "curriculaAffiliationDegree",
+           "Affiliation",
+           selected="Undergraduate",
+           choices = sort(unique(availProg$`Programme.Level`)),
+           options = list(`actions-box` = TRUE, placeholder="Select affiliation...", `live-search` = TRUE),
+           multiple = T
+         ),
+         fluidRow(
+           column(12,
+                  tabItem(tabName="curricula", width=NULL,
+                          plotlyOutput("curriculaDegreePlot", height="1000px"))
+           )
+         ),
+         
+         # Gender and Ethinicity Plot
+         h3(""),
+         fluidRow(
+           column(6,
+                  tabItem(tabName="curricula", width=NULL,
+                          plotOutput("curriculaGenderPlot", height = "400px"))
+           ),
+           column(6,
+                  tabItem(tabName="curricula", width=NULL,
+                          plotOutput("curriculaResidencyPlot", height = "400px"))
+           )
+         ),
+         
+         # Iwi and Residency Plot
+         h3(""),
+         fluidRow(
+           column(12,
+                  tabItem(tabName="curricula", width=NULL,
+                          plotOutput("curriculaEthinicityPlot", height = "400px"))
+           )),
+         h3(""),
+         fluidRow(
+           column(12,
+                  tabItem(tabName="curricula", width=NULL,
+                          plotOutput("curriculaIwiPlot", height = "400px"))
            )
          )
        )

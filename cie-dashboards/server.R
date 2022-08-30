@@ -53,7 +53,9 @@ all_studio <- read_csv("../data/all_studio.csv", col_types = cols(ID = col_chara
 colnames(all_training) <- c("ID", "date", "programme")
 
 curricula_programmes = sort(unique(selection$tag_programme[selection$curricula == "Y"]))
-overview_df["curricula"] = ifelse(overview_df$programme %in% curricula_programmes, "Curricula", "Co-curricula")
+curricula_df = overview_df %>% mutate(
+  programme = ifelse(programme %in% curricula_programmes, "Curricula", "Co-curricula")
+)
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
@@ -71,9 +73,25 @@ server <- function(input, output, session) {
         return(journey_df)
       } else if (input$tab == "createmaker") {
         return(createmaker_df)
-      } else {
-        return(overview_df)
+      } else if (input$tab == "curricula") {
+        return(curricula_df)
       }
+  })
+  
+  facultyDepartment = reactive({
+    if (input$tab == "programme") {
+      return(input$programmeFacultyDepartment)
+    } else if (input$tab == "curricula") {
+      return(input$curriculaFacultyDepartment)
+    }
+  })
+  
+  affiliationDegree = reactive({
+    if (input$tab == "programme") {
+      return(input$programmeAffiliationDegree)
+    } else if (input$tab == "curricula") {
+      return(input$curriculaAffiliationDegree)
+    }
   })
   
   # Update the filers based on selected year
@@ -108,6 +126,9 @@ server <- function(input, output, session) {
         
         updatePickerInput(session, "baseProgramme", selected = "CIE Participant", choices = sort(unique(filterData()$programme)))
         
+      } else if (input$tab == "curricula") {
+        curricula_options = sort(unique(curricula_df$programme))
+        updatePickerInput(session, "baseProgramme", selected = curricula_options, choices = curricula_options)
       }
   })
   
@@ -430,7 +451,7 @@ server <- function(input, output, session) {
   })
   
   ## Programme Dashboard
-  output$programmeUniquePlot <- renderPlot({
+  output$curriculaUniquePlot <- output$programmeUniquePlot <- renderPlot({
     overviewPlot_df() %>% 
       select(ID,year, programme) %>%
       distinct() %>% 
@@ -446,7 +467,7 @@ server <- function(input, output, session) {
       #scale_fill_tableau() + scale_colour_tableau()
   })
   
-  output$programmeRepeatPlot <- renderPlot({
+  output$curriculaRepeatPlot <- output$programmeRepeatPlot <- renderPlot({
     overviewPlot_df() %>% 
       select(ID,year, programme) %>%
       distinct() %>% # Avoid conjoint students appear twice
@@ -465,7 +486,7 @@ server <- function(input, output, session) {
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
   })
   
-  output$programmeFacultyPlot <- renderPlot({
+  output$curriculaFacultyPlot <- output$programmeFacultyPlot <- renderPlot({
     for (label in names(filtermap)) {
       key = filtermap[[label]]
       if (length(input[[key]]) >= 1 || key == "year") {
@@ -490,10 +511,10 @@ server <- function(input, output, session) {
     }
   })
   
-  output$programmeDepartmentPlot <- renderPlotly({
+  output$curriculaDepartmentPlot <- output$programmeDepartmentPlot <- renderPlotly({
     if (length(input$baseYear)>1) {
       generalPlot_df() %>%
-        filter(`Owner.of.Major.Spec.Module` %in% input$programmeFacultyDepartment) %>% # Filter selected faculties
+        filter(`Owner.of.Major.Spec.Module` %in% facultyDepartment()) %>% # Filter selected faculties
         select(ID, year, programme, `Plan.Description`, `Owner.of.Major.Spec.Module`) %>%
         group_by(`Plan.Description`, year, programme ,`Owner.of.Major.Spec.Module`) %>%
         summarise(count=n(), ymin=min(count), ymax=max(count)) %>%
@@ -511,7 +532,7 @@ server <- function(input, output, session) {
     }
     else {
       generalPlot_df() %>%
-        filter(`Owner.of.Major.Spec.Module` %in% input$programmeFacultyDepartment) %>% # Filter selected faculties
+        filter(`Owner.of.Major.Spec.Module` %in% facultyDepartment()) %>% # Filter selected faculties
         select(ID, year, programme, `Plan.Description`, `Owner.of.Major.Spec.Module`) %>%
         group_by(`Plan.Description`, year, programme ,`Owner.of.Major.Spec.Module`) %>%
         summarise(count=n()) %>% 
@@ -527,7 +548,7 @@ server <- function(input, output, session) {
     }
   })
   
-  output$programmeAffiliationPlot <- renderPlot({
+  output$curriculaAffiliationPlot <- output$programmeAffiliationPlot <- renderPlot({
     for (label in names(filtermap)) {
       key = filtermap[[label]]
       if (length(input[[key]]) >= 1 || key == "year") {
@@ -552,7 +573,7 @@ server <- function(input, output, session) {
     }
   })
   
-  output$programmeDegreePlot <- renderPlotly({
+  output$curriculaDegreePlot <- output$programmeDegreePlot <- renderPlotly({
     key = ""
     for (label in names(filtermap)) {
       this_key = filtermap[[label]]
@@ -563,7 +584,7 @@ server <- function(input, output, session) {
     if (key != "") {
       print(paste("Faceting programmeDegreePlot by", key))
       generalPlot_df() %>%
-        filter(`Programme.Level` %in% input$programmeAffiliationDegree) %>% # Filter selected
+        filter(`Programme.Level` %in% affiliationDegree()) %>% # Filter selected
         select(ID, !!key, programme, `Descriptio`, `Programme.Level`) %>%
         group_by(!!key, programme ,`Descriptio`, `Programme.Level`) %>%
         summarise(count=n(), ymin=min(count), ymax=max(count)) %>%
@@ -580,7 +601,7 @@ server <- function(input, output, session) {
         scale_fill_tableau() + scale_colour_tableau()
     } else if (length(input$baseYear)>1) {
       generalPlot_df() %>%
-        filter(`Programme.Level` %in% input$programmeAffiliationDegree) %>% # Filter selected
+        filter(`Programme.Level` %in% affiliationDegree()) %>% # Filter selected
         select(ID, year, programme, `Descriptio`, `Programme.Level`) %>%
         group_by(year, programme ,`Descriptio`, `Programme.Level`) %>%
         summarise(count=n(), ymin=min(count), ymax=max(count)) %>%
@@ -598,7 +619,7 @@ server <- function(input, output, session) {
     }
     else {
       generalPlot_df() %>%
-        filter(`Programme.Level` %in% input$programmeAffiliationDegree) %>% # Filter selected
+        filter(`Programme.Level` %in% affiliationDegree()) %>% # Filter selected
         select(ID, year, programme, `Descriptio`, `Programme.Level`) %>%
         group_by(year, programme ,`Descriptio`, `Programme.Level`) %>%
         summarise(count=n()) %>%
@@ -614,7 +635,7 @@ server <- function(input, output, session) {
     }
   })
   
-  output$programmeGenderPlot <- renderPlot({
+  output$curriculaGenderPlot <- output$programmeGenderPlot <- renderPlot({
     generalPlot_df() %>% 
       select(ID, year, programme, `Sex`) %>% 
       distinct() %>% # Avoid doublecounting conjoints
@@ -635,7 +656,7 @@ server <- function(input, output, session) {
       scale_fill_tableau() + scale_colour_tableau()
   })
   
-  output$programmeEthinicityPlot <- renderPlot({
+  output$curriculaEthinicityPlot <- output$programmeEthinicityPlot <- renderPlot({
     generalPlot_df() %>% 
       select(ID, year, programme, `Ethnicity`) %>% 
       distinct() %>% # Avoid doublecounting conjoints
@@ -655,7 +676,7 @@ server <- function(input, output, session) {
       scale_fill_tableau() + scale_colour_tableau()
   })
   
-  output$programmeResidencyPlot <- renderPlot({
+  output$curriculaResidencyPlot <- output$programmeResidencyPlot <- renderPlot({
     generalPlot_df() %>% 
       select(ID, year, programme, `Residency.Status`) %>% 
       distinct() %>% # Avoid doublecounting conjoints
@@ -675,7 +696,7 @@ server <- function(input, output, session) {
       scale_fill_tableau() + scale_colour_tableau()
   })
   
-  output$programmeIwiPlot <- renderPlot({
+  output$curriculaIwiPlot <- output$programmeIwiPlot <- renderPlot({
     generalPlot_df() %>% 
       select(ID, year, programme, `Descr`) %>% 
       distinct() %>% # Avoid doublecounting conjoints
@@ -1525,42 +1546,6 @@ server <- function(input, output, session) {
     df$ID2 <- match(df$target.programme, nodes$name) - 1
     
     sankeyNetwork(Links = df, Nodes=nodes, Source = "ID1", "ID2", "count", NodeID = "name", nodePadding = 30, fontSize = 10)
-  })
-
-  ## Curricula Dashboard
-  output$curriculaUniquePlot <- renderPlot({
-    filterData() %>% 
-      select(ID,year, curricula) %>%
-      distinct() %>% 
-      group_by(year, curricula) %>% 
-      summarise(count=n()) %>% 
-      ggplot(aes(x=factor(year),y=count, label=count)) +
-      facet_wrap(curricula~.) +
-      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-      ggtitle("Unique participants by year") +
-      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-    #scale_fill_tableau() + scale_colour_tableau()
-  })
-  
-  output$curriculaRepeatPlot <- renderPlot({
-    filterData() %>% 
-      select(ID,year, curricula) %>%
-      distinct() %>% # Avoid conjoint students appear twice
-      arrange(year) %>% 
-      group_by(ID, curricula) %>%
-      filter(row_number()>1) %>% # Returning students
-      ungroup() %>% 
-      group_by(year, curricula) %>% 
-      summarise(count=n()) %>% 
-      ggplot(aes(x=factor(year),y=count, label=count)) +
-      facet_wrap(curricula~.) +
-      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-      ggtitle("Repeat participants by year") +
-      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-      theme(panel.background = element_rect(fill="grey99", colour="grey99"))
   })
 #}) # End
 }
