@@ -53,7 +53,7 @@ all_studio <- read_csv("../data/all_studio.csv", col_types = cols(ID = col_chara
 colnames(all_training) <- c("ID", "date", "programme")
 
 curricula_programmes = sort(unique(selection$tag_programme[selection$curricula == "Y"]))
-curricula_df = overview_df %>% mutate(
+curricula_df = programme_df %>% mutate(
   programme = ifelse(programme %in% curricula_programmes, "Curricula", "Co-curricula")
 )
 
