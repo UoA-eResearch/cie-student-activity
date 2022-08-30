@@ -68,6 +68,7 @@ ui <- dashboardPage(
         menuItem("Unleash Space", tabName = "unleash", icon = icon("fas fa-square")),
         menuItem("Create and Maker Space", tabName = "createmaker", icon = icon("fas fa-square")),
         menuItem("Journey map", tabName="journey", icon = icon("fas fa-square")),
+        menuItem("Curricula vs co-curricular", tabName="curricula", icon = icon("fas fa-square")),
 
         # Sidebar Inputs
         pickerInput(
@@ -624,8 +625,25 @@ ui <- dashboardPage(
                   tabItem(tabName = "journey", width=NULL, 
                           plotOutput("journeyIndividualHeatmap", height="800px")))
          )
+       ),
+       
+       
+       # Curricula vs Co-curricular
+       tabItem(
+         tabName = "curricula",
+         
+         # Overview chart
+         fluidRow(
+           column(6,
+                  tabItem(tabName="curricula", width=NULL,
+                          plotOutput("curriculaUniquePlot", height = "300px"))
+           ),
+           column(6,
+                  tabItem(tabName="curricula", width=NULL,
+                          plotOutput("curriculaRepeatPlot", height = "300px"))
+           )
+         )
        )
-       # End of tabItem
      )
    )
 )

@@ -52,6 +52,9 @@ all_training <- read_csv("../data/all_training.csv", col_types = cols(ID = col_c
 all_studio <- read_csv("../data/all_studio.csv", col_types = cols(ID = col_character(), year = col_character())) %>% filter(!is.na(timestamp)) %>% distinct()
 colnames(all_training) <- c("ID", "date", "programme")
 
+curricula_programmes = sort(unique(selection$tag_programme[selection$curricula == "Y"]))
+overview_df["curricula"] = ifelse(overview_df$programme %in% curricula_programmes, "Curricula", "Co-curricula")
+
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
   # Reactivate dataframes
@@ -66,8 +69,10 @@ server <- function(input, output, session) {
         return(unleash_df)
       } else if (input$tab =="journey") {
         return(journey_df)
-      } else {
+      } else if (input$tab == "createmaker") {
         return(createmaker_df)
+      } else {
+        return(overview_df)
       }
   })
   
@@ -555,7 +560,8 @@ server <- function(input, output, session) {
         key = sym(this_key)
       }
     }
-    if (length(key)) {
+    if (key != "") {
+      print(paste("Faceting programmeDegreePlot by", key))
       generalPlot_df() %>%
         filter(`Programme.Level` %in% input$programmeAffiliationDegree) %>% # Filter selected
         select(ID, !!key, programme, `Descriptio`, `Programme.Level`) %>%
@@ -1519,6 +1525,42 @@ server <- function(input, output, session) {
     df$ID2 <- match(df$target.programme, nodes$name) - 1
     
     sankeyNetwork(Links = df, Nodes=nodes, Source = "ID1", "ID2", "count", NodeID = "name", nodePadding = 30, fontSize = 10)
+  })
+
+  ## Curricula Dashboard
+  output$curriculaUniquePlot <- renderPlot({
+    filterData() %>% 
+      select(ID,year, curricula) %>%
+      distinct() %>% 
+      group_by(year, curricula) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=factor(year),y=count, label=count)) +
+      facet_wrap(curricula~.) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      ggtitle("Unique participants by year") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(panel.background = element_rect(fill="grey99", colour="grey99"))
+    #scale_fill_tableau() + scale_colour_tableau()
+  })
+  
+  output$curriculaRepeatPlot <- renderPlot({
+    filterData() %>% 
+      select(ID,year, curricula) %>%
+      distinct() %>% # Avoid conjoint students appear twice
+      arrange(year) %>% 
+      group_by(ID, curricula) %>%
+      filter(row_number()>1) %>% # Returning students
+      ungroup() %>% 
+      group_by(year, curricula) %>% 
+      summarise(count=n()) %>% 
+      ggplot(aes(x=factor(year),y=count, label=count)) +
+      facet_wrap(curricula~.) +
+      geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+      geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+      ggtitle("Repeat participants by year") +
+      theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+      theme(panel.background = element_rect(fill="grey99", colour="grey99"))
   })
 #}) # End
 }
