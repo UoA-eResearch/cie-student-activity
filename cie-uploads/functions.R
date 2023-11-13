@@ -13,6 +13,7 @@ library(reshape2)
 library(tools)
 library(networkD3)
 library(plotly)
+library(stringi)
 
 ## Replacements
 facultyRename <- tibble(
@@ -426,7 +427,7 @@ join_table <- function(selected_partProg, partInfo) {
   df_stud <- df %>% 
     #filter(!is.na(`Acad.Prog`)) %>% 
     filter(grepl("^\\d{4}", programme)) %>% 
-    mutate(year=substring(`programme`,0,4), programme=substring(`programme`,6)) %>% 
+    mutate(year=stri_sub(`programme`,0,4), programme=stri_sub(`programme`,6)) %>% 
     filter(updated == year || is.na(updated)) %>% # Remove accumalive data exempt EXTERNAL data
     select(-`NSN`) %>% 
     distinct() # Remove duplicates
