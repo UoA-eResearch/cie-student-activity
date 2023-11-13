@@ -206,10 +206,12 @@ server <- function(input, output, session) {
                                 df  <- read_excel(uploadPath)
                                 
                                 # Check if column names are consistent
-                                columnCondition <- all(sort(colnames(read_excel("../data/base/Original - 2016 CIE Participants at 20190708.xlsx"))) == sort(colnames(df)))
+                                coldiff = setdiff(colnames(read_excel("../data/base/Original - 2016 CIE Participants at 20190708.xlsx")), colnames(df))
                                 validate(
-                                  need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/Original - 2016 CIE Participants at 20190708.xlsx")), colnames(df))))
+                                  need(length(coldiff) == 0, message=paste0("Error in column names: ", coldiff))
                                 )
+                                # Drop any extra cols
+                                df = df[colnames(read_excel("../data/base/Original - 2016 CIE Participants at 20190708.xlsx"))]
                         }
                         # Import Member and Training
                         else if (input$saveType == "Members and Training ") {
