@@ -116,7 +116,7 @@ server <- function(input, output, session) {
         availTraining <- all_training %>% mutate(year=format(date, "%Y")) %>% filter(year %in% input$baseYear) %>% distinct(programme)
         availStudio <- all_studio %>% filter(year %in% input$baseYear) %>% distinct(programme)
         availChoices <- bind_rows(availChoices, availTraining, availStudio)
-        availChoices_baseDestination <- selection %>% filter(journey=="Y") %>% filter(year %in% input$baseYear) %>% distinct(final_tags)
+        availChoices_baseDestination <- selection %>% filter(journey=="Y") %>% filter(!is.na(date)) %>% filter(year %in% input$baseYear) %>% filter(!grepl("^\\D", date)) %>% arrange(date) %>% distinct(final_tags)
         
         updatePickerInput(session, "baseProgramme", selected = sort(unique(availChoices$programme)), choices = sort(unique(availChoices$programme)))
         updatePickerInput(session, "baseDestination", selected = availChoices_baseDestination$final_tags[53], choices = sort(unique(availChoices_baseDestination$final_tags)))
