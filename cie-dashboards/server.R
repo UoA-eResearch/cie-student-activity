@@ -350,6 +350,7 @@ server <- function(input, output, session) {
     df <- df %>% mutate(date.source.programme = paste(date, source.programme)) %>% select(-date)
     df <- merge(df, tags, by.x="target.programme", by.y="final_tags", all.x = TRUE) %>% distinct() # Add date
     df <- df %>% mutate(date.target.programme = paste(date, target.programme)) %>% select(-date)
+    df <- df %>% arrange(count) %>% top_n(100)
     
     return(df)
   })
