@@ -1,6 +1,8 @@
 ## server.R ##
 ## CIE Dashboards
 
+# 
+
 # libraries
 library(shiny)
 library(shinydashboard)
@@ -54,29 +56,40 @@ all_studio <- read_csv("../data/all_studio.csv", col_types = cols(ID = col_chara
 colnames(all_training) <- c("ID", "date", "programme")
 
 curricula_programmes = sort(unique(selection$tag_programme[selection$curricula == "Y"]))
-curricula_df = programme_df %>% mutate(
-  programme = ifelse(programme %in% curricula_programmes, "Curricula", "Co-curricula")
-)
+if ("co-curricula" %in% colnames(selection)) {
+  cocurricula_programmes = sort(unique(selection$tag_programme[selection$`co-curricula` == "Y"]))
+  # curricula_df = allData %>% mutate(
+  #   programme = case_when(
+  #     programme %in% curricula_programmes ~ "Curricula",
+  #     programme %in% cocurricula_programmes ~ "Co-curricula"
+  #   )
+  # ) %>% filter(!is.na(programme))
+} else {
+  curricula_df = programme_df %>% mutate(
+    programme = ifelse(programme %in% curricula_programmes, "Curricula", "Co-curricula")
+  )
+}
+
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
   # Reactivate dataframes
   filterData <- reactive({
-      if (input$tab == "overview") {
-        return(overview_df)
-      } else if (input$tab == "programme") {
-        return(programme_df)
-      } else if (input$tab == "velocity") {
-        return(velocity_df)
-      } else if (input$tab == "unleash") {
-        return(unleash_df)
-      } else if (input$tab =="journey") {
-        return(journey_df)
-      } else if (input$tab == "createmaker") {
-        return(createmaker_df)
-      } else if (input$tab == "curricula") {
-        return(curricula_df)
-      }
+    if (input$tab == "overview") {
+      return(overview_df)
+    } else if (input$tab == "programme") {
+      return(programme_df)
+    } else if (input$tab == "velocity") {
+      return(velocity_df)
+    } else if (input$tab == "unleash") {
+      return(unleash_df)
+    } else if (input$tab =="journey") {
+      return(journey_df)
+    } else if (input$tab == "createmaker") {
+      return(createmaker_df)
+    } else if (input$tab == "curricula") {
+      return(curricula_df)
+    }
   })
   
   facultyDepartment = reactive({
@@ -97,40 +110,40 @@ server <- function(input, output, session) {
   
   # Update the filers based on selected year
   observe({
-      if (input$tab == "velocity") {
-        
-        updatePickerInput(session, "baseProgramme", selected = "Velocity Participant", choices = sort(unique(filterData()$programme)))
-        
-      } else if (input$tab == "unleash") {
-        
-        updatePickerInput(session, "baseProgramme", selected = "Unleash Space Participant", choices = sort(unique(filterData()$programme)))
-        updatePickerInput(session, "unleashStudioMonth", selected = sort(unique(studio_df()$month))[1:4], choices = sort(unique(studio_df()$month)))
-        
-      } else if (input$tab == "createmaker") {
-        
-        updatePickerInput(session, "baseProgramme", selected = "Equipment Training Participant", choices = sort(unique(filterData()$programme)))
-        updatePickerInput(session, "createmakerStudioMonth", selected = sort(unique(studio_df()$month))[1:4], choices = sort(unique(studio_df()$month)))
-        
-      } else if (input$tab == "journey") {
-        
-        availChoices <- filterData() %>% filter(year %in% input$baseYear) %>% mutate(programme = paste(year, programme)) %>% distinct(programme)
-        availTraining <- all_training %>% mutate(year=format(date, "%Y")) %>% filter(year %in% input$baseYear) %>% distinct(programme)
-        availStudio <- all_studio %>% filter(year %in% input$baseYear) %>% distinct(programme)
-        availChoices <- bind_rows(availChoices, availTraining, availStudio)
-        availChoices_baseDestination <- selection %>% filter(journey=="Y") %>% filter(!is.na(date)) %>% filter(year %in% input$baseYear) %>% filter(!grepl("^\\D", date)) %>% arrange(date) %>% distinct(final_tags)
-        
-        updatePickerInput(session, "baseProgramme", selected = sort(unique(availChoices$programme)), choices = sort(unique(availChoices$programme)))
-        updatePickerInput(session, "baseDestination", choices = sort(unique(availChoices_baseDestination$final_tags)))
-        updatePickerInput(session, "baseSource", selected = "", choices = c("",availChoices_baseDestination$final_tags))
-        
-      } else if (input$tab %in% c("overview","programme")) {
-        
-        updatePickerInput(session, "baseProgramme", selected = "CIE Participant", choices = sort(unique(filterData()$programme)))
-        
-      } else if (input$tab == "curricula") {
-        curricula_options = sort(unique(curricula_df$programme))
-        updatePickerInput(session, "baseProgramme", selected = curricula_options, choices = curricula_options)
-      }
+    if (input$tab == "velocity") {
+      
+      updatePickerInput(session, "baseProgramme", selected = "Velocity Participant", choices = sort(unique(filterData()$programme)))
+      
+    } else if (input$tab == "unleash") {
+      
+      updatePickerInput(session, "baseProgramme", selected = "Unleash Space Participant", choices = sort(unique(filterData()$programme)))
+      updatePickerInput(session, "unleashStudioMonth", selected = sort(unique(studio_df()$month))[1:4], choices = sort(unique(studio_df()$month)))
+      
+    } else if (input$tab == "createmaker") {
+      
+      updatePickerInput(session, "baseProgramme", selected = "Equipment Training Participant", choices = sort(unique(filterData()$programme)))
+      updatePickerInput(session, "createmakerStudioMonth", selected = sort(unique(studio_df()$month))[1:4], choices = sort(unique(studio_df()$month)))
+      
+    } else if (input$tab == "journey") {
+      
+      availChoices <- filterData() %>% filter(year %in% input$baseYear) %>% mutate(programme = paste(year, programme)) %>% distinct(programme)
+      availTraining <- all_training %>% mutate(year=format(date, "%Y")) %>% filter(year %in% input$baseYear) %>% distinct(programme)
+      availStudio <- all_studio %>% filter(year %in% input$baseYear) %>% distinct(programme)
+      availChoices <- bind_rows(availChoices, availTraining, availStudio)
+      availChoices_baseDestination <- selection %>% filter(journey=="Y") %>% filter(!is.na(date)) %>% filter(year %in% input$baseYear) %>% filter(!grepl("^\\D", date)) %>% arrange(date) %>% distinct(final_tags)
+      
+      updatePickerInput(session, "baseProgramme", selected = sort(unique(availChoices$programme)), choices = sort(unique(availChoices$programme)))
+      updatePickerInput(session, "baseDestination", choices = sort(unique(availChoices_baseDestination$final_tags)))
+      updatePickerInput(session, "baseSource", selected = "", choices = c("",availChoices_baseDestination$final_tags))
+      
+    } else if (input$tab %in% c("overview","programme")) {
+      
+      updatePickerInput(session, "baseProgramme", selected = "CIE Participant", choices = sort(unique(filterData()$programme)))
+      
+    } else if (input$tab == "curricula") {
+      curricula_options = sort(unique(curricula_df$programme))
+      updatePickerInput(session, "baseProgramme", selected = curricula_options, choices = curricula_options)
+    }
   })
   
   studio_df <- reactive({
@@ -155,7 +168,7 @@ server <- function(input, output, session) {
     } else {
       df <- filterData() %>% 
         distinct(ID,year,programme) #%>% # Remove people who are conjoints
-        #filter(!programme %in% c("CIE Participant"))
+      #filter(!programme %in% c("CIE Participant"))
     }
     return(df)
   })
@@ -178,18 +191,18 @@ server <- function(input, output, session) {
   
   generalPlot_df <- reactive({
     if (!input$tab %in% c("overview")) {
-        df <- filterData() %>% 
-          filter(year %in% input$baseYear) %>% 
-          filter(programme %in% input$baseProgramme)
-        for (label in names(filtermap)) {
-          key = filtermap[[label]]
-          if (length(input[[key]]) >= 1) {
-            print(paste("Filtering", key, label, input[[key]]))
-            df <- df %>%
-              filter(df[[key]] %in% input[[key]])
-          }
+      df <- filterData() %>% 
+        filter(year %in% input$baseYear) %>% 
+        filter(programme %in% input$baseProgramme)
+      for (label in names(filtermap)) {
+        key = filtermap[[label]]
+        if (length(input[[key]]) >= 1) {
+          print(paste("Filtering", key, label, input[[key]]))
+          df <- df %>%
+            filter(df[[key]] %in% input[[key]])
         }
-        return(df)
+      }
+      return(df)
     }
   })
   
@@ -210,21 +223,21 @@ server <- function(input, output, session) {
     # Filter non-students
     df <- filterData() %>%
       filter(!`Owner.of.Major.Spec.Module` %in% c("ALUMNI","STAFF", "EXTERNAL")) %>% select(`ID`, `programme`, `year`)
-
+    
     # Add year to programme and remove year
     df$programme <- paste(df$year, df$programme)
-
+    
     # Filter year and programme
     df <- df %>%
       filter(year %in% input$baseYear) %>%
       filter(programme %in% input$baseProgramme)
-
+    
     # Filter out Journey Table data
     tags <- selection %>% filter(journey=="Y")
     #tags <- tags %>% filter(date !="Overarching Tag") %>% filter(date !="Unleash Space Master List") %>% filter(date !="") %>% filter(!is.na(date))  # Need to include these in then
     #tags <- tags %>% filter(!is.na(date))
     tags <- tags %>% select(`final_tags`, `date`)
-
+    
     # Filter ID that went to the destination or source
     if (input$baseSource != "") {
       selectedIDs <- df %>% filter(programme %in% input$baseSource) %>% distinct(ID)
@@ -282,7 +295,7 @@ server <- function(input, output, session) {
     # Add total number of events per ID, add total number of IDs per total
     df_total_event <-df %>% group_by(ID) %>% summarise(total=n()) %>% distinct()
     df_total_event <- df_total_event %>% group_by(total) %>% mutate(num_students=n()) %>% ungroup()
-  
+    
     # Merge
     df <- merge(df, df_total_event, by = "ID")
     
@@ -325,15 +338,15 @@ server <- function(input, output, session) {
     # Split datasets into single event goers and multiple event goers
     df_single <- df %>% filter(count_event==1) %>% group_by(ID) %>% arrange(date, .by_group=TRUE) %>% ungroup()
     df_not_single <- df %>% filter(count_event!=1) %>% group_by(ID) %>% arrange(date, .by_group=TRUE) %>% ungroup()
-
+    
     # Add lags to both datasets
     df_single_lag <- df_single %>% group_by(ID) %>% mutate(source.programme=lead(programme, 1, default = NA)) %>% arrange(date, .by_group=TRUE) %>% ungroup()
     df_not_single_lag <- df_not_single %>% group_by(ID) %>% mutate(target.programme=lead(programme, 1, default = NA)) %>% arrange(date, .by_group=TRUE) %>% filter(!is.na(target.programme)) %>% ungroup()
-
+    
     # Change column names
     df_not_single_lag <- df_not_single_lag %>% select(programme, target.programme, ID, date)
     colnames(df_not_single_lag) <- c("source.programme", "target.programme", "ID", "date")
-
+    
     df_single_lag <- df_single_lag %>% select(programme, source.programme, ID, date)
     if (input$baseSource == "") {
       colnames(df_single_lag) <- c("target.programme", "source.programme", "ID", "date")
@@ -341,7 +354,7 @@ server <- function(input, output, session) {
       colnames(df_single_lag) <- c("source.programme", "target.programme", "ID", "date")
     }
     df_lag <- rbind(df_single_lag, df_not_single_lag)
-
+    
     # Sum counts grouped by target and source
     df <- df_lag %>% group_by(`target.programme`,`source.programme`) %>% summarise(count=n())
     
@@ -453,13 +466,13 @@ server <- function(input, output, session) {
         axis.text.x = element_text(angle = -30, hjust=0),
         panel.grid.major = element_blank(),
         panel.background = element_rect(fill="grey97")
-        ) +
+      ) +
       labs(x="", y="")
     ggplotly(p) %>%
       layout(
-              xaxis = list(showgrid = FALSE, scaleanchor="y", constrain="domain", zeroline=FALSE),
-              yaxis = list(showgrid = FALSE, zeroline=FALSE)
-        )
+        xaxis = list(showgrid = FALSE, scaleanchor="y", constrain="domain", zeroline=FALSE),
+        yaxis = list(showgrid = FALSE, zeroline=FALSE)
+      )
   })
   
   ## Programme Dashboard
@@ -476,7 +489,7 @@ server <- function(input, output, session) {
       ggtitle("Unique participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-      #scale_fill_tableau() + scale_colour_tableau()
+    #scale_fill_tableau() + scale_colour_tableau()
   })
   
   output$curriculaRepeatPlot <- output$programmeRepeatPlot <- renderPlot({
@@ -504,21 +517,21 @@ server <- function(input, output, session) {
       if (length(input[[key]]) >= 1 || key == "year") {
         key = sym(key)
         return(generalPlot_df() %>% 
-          select(ID, !!key, programme, `Owner.of.Major.Spec.Module`) %>% 
-          distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
-          group_by(`Owner.of.Major.Spec.Module`, !!key, programme) %>% 
-          summarise(count=n()) %>% 
-          group_by(!!key, programme) %>% 
-          mutate(sum_count=sum(count)) %>% 
-          ggplot(aes(x=reorder(`Owner.of.Major.Spec.Module`, -count), y=count, label=count, fill=factor(!!key), colour=factor(!!key))) +
-          geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-          geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(!!key)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
-          geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-          facet_wrap(programme~., ncol=3) +
-          ggtitle("Faculty") +
-          theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-          theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
-          scale_fill_tableau() + scale_colour_tableau())
+                 select(ID, !!key, programme, `Owner.of.Major.Spec.Module`) %>% 
+                 distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
+                 group_by(`Owner.of.Major.Spec.Module`, !!key, programme) %>% 
+                 summarise(count=n()) %>% 
+                 group_by(!!key, programme) %>% 
+                 mutate(sum_count=sum(count)) %>% 
+                 ggplot(aes(x=reorder(`Owner.of.Major.Spec.Module`, -count), y=count, label=count, fill=factor(!!key), colour=factor(!!key))) +
+                 geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+                 geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(!!key)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
+                 geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+                 facet_wrap(programme~., ncol=3) +
+                 ggtitle("Faculty") +
+                 theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+                 theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+                 scale_fill_tableau() + scale_colour_tableau())
       }
     }
   })
@@ -566,21 +579,21 @@ server <- function(input, output, session) {
       if (length(input[[key]]) >= 1 || key == "year") {
         key = sym(key)
         return (generalPlot_df() %>% 
-          select(ID, !!key, programme, `Programme.Level`) %>% 
-          distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
-          group_by(`Programme.Level`, !!key, programme) %>% 
-          summarise(count=n()) %>% 
-          group_by(!!key, programme) %>% 
-          mutate(sum_count=sum(count)) %>% 
-          ggplot(aes(x=reorder(`Programme.Level`, -count), y=count, label=count, fill=factor(!!key), colour=factor(!!key))) +
-          geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
-          geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
-          geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(!!key)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
-          facet_wrap(programme~., ncol=3) +
-          ggtitle("Affiliation") +
-          theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
-          theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
-          scale_fill_tableau() + scale_colour_tableau())
+                  select(ID, !!key, programme, `Programme.Level`) %>% 
+                  distinct() %>% # Avoid double counts people who switch degree levels from undergraduate to postgrad
+                  group_by(`Programme.Level`, !!key, programme) %>% 
+                  summarise(count=n()) %>% 
+                  group_by(!!key, programme) %>% 
+                  mutate(sum_count=sum(count)) %>% 
+                  ggplot(aes(x=reorder(`Programme.Level`, -count), y=count, label=count, fill=factor(!!key), colour=factor(!!key))) +
+                  geom_bar(position = position_dodge2(width = 0.9, preserve = "single"), stat = "identity" ) +
+                  geom_text(vjust=0, position = position_dodge2(width = 0.9, preserve = "single")) +
+                  geom_text(aes(label=paste0(round(count*100/sum_count,1),"%"), color=factor(!!key)), position = position_dodge2(width = 0.9, preserve = "single"), vjust=-1.6, alpha=.8) +
+                  facet_wrap(programme~., ncol=3) +
+                  ggtitle("Affiliation") +
+                  theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
+                  theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
+                  scale_fill_tableau() + scale_colour_tableau())
       }
     }
   })
@@ -1193,7 +1206,7 @@ server <- function(input, output, session) {
       #theme(axis.text.x = element_text(angle = -20, vjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
   })
-    
+  
   ## Create Maker Dashboard
   output$createmakerUniquePlot <- renderPlot({
     overviewPlot_df() %>% 
@@ -1523,7 +1536,7 @@ server <- function(input, output, session) {
   observeEvent(input$updateTotal, {
     updatePickerInput(session, "journeyGroup", selected = journey_table_df()$total[1], choices = sort(unique(journey_table_df()$total)))
   })
-
+  
   output$journeyIndividualHeatmap <- renderPlot({
     if (input$baseSource != "") {
       df <- journey_map_df() %>% mutate(programme=paste(date,programme))
@@ -1559,5 +1572,5 @@ server <- function(input, output, session) {
     
     sankeyNetwork(Links = df, Nodes=nodes, Source = "ID1", "ID2", "count", NodeID = "name", nodePadding = 30, fontSize = 10)
   })
-#}) # End
+  #}) # End
 }

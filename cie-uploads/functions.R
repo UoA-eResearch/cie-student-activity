@@ -22,13 +22,13 @@ facultyRename <- tibble(
                  "Medical & Health Sciences", "Science", "Business & Economics", "Engineering", "Creative Arts & Industries", "Arts",
                  "Law", "The University of Auckland", "Education & Social Work", "Auck Bioengineering Institute", "Bioengineering Institute", "New Start",
                  "Centre for Cont Education", "Theology"
-                 ),
+  ),
   newFaculty = c("Business & Economics", "Science", "Arts", "Law", "Education & Social Work",
                  "Engineering", "Creative Arts & Industries", "Medical & Health Sciences",
                  "Medical & Health Sciences", "Science", "Business & Economics", "Engineering", "Creative Arts & Industries", "Arts",
                  "Law", "The University of Auckland", "Education & Social Work", "Auck Bioengineering Institute", "Bioengineering Institute", "New Start",
                  "Centre for Cont Education", "Theology"
-                 )
+  )
 )
 
 ## Functions
@@ -45,7 +45,7 @@ process_write <- function(data_dir, backup_dir) {
     
     # Load TAG
     withProgress(message = "Loading TAG data", style=style, value =.5, {
-      selection <- load_tag(data_dir, backup_dir)
+      selection <- load_tag(data_dir, backup_dir, TRUE)
       incProgress(.4)
     })
     incProgress(.1)
@@ -130,7 +130,7 @@ process_write <- function(data_dir, backup_dir) {
     incProgress(.1)
     Sys.sleep(0.2)
   })
-
+  
   return("Success!")
 }
 
@@ -266,7 +266,7 @@ load_crm <- function(data_dir) {
     reduce(rbind) %>% 
     select(`UoA ID`, `Tags`, ID) %>% 
     na.omit() # Ignore NAs
-
+  
   eventCsv <- filesCsv %>% 
     map(read_csv) %>% 
     reduce(rbind) %>% 
@@ -306,7 +306,6 @@ load_crm <- function(data_dir) {
 
 # Load STUDIO
 load_studio <- function(data_dir, backup_dir) {
-   
   # Gather file paths
   years <- list.files(data_dir, pattern = "\\d+")
   # C&M
@@ -354,7 +353,7 @@ load_studio <- function(data_dir, backup_dir) {
 }
 
 # Load TAG
-load_tag <- function(data_dir, backup_dir) {
+load_tag <- function(data_dir, backup_dir, save = FALSE) {
   # Gather file paths
   file <-  dir(file.path(data_dir,"tags"), pattern="tags.*xlsx", full.names = TRUE)
   
@@ -373,19 +372,29 @@ load_tag <- function(data_dir, backup_dir) {
     distinct()
   
   # Rename columns
-  colnames(selection) <- c("tags", "final_tags", "dashboards", "overview", "programme", "velocity", "unleash", "createmaker", "curricula", "journey", "date", "comment", "year", "tag_programme")
+  if (ncol(selection) == 14) {
+    colnames(selection) <- c("tags", "final_tags", "dashboards", "overview", "programme", "velocity", "unleash", "createmaker", "curricula", "journey", "date", "comment", "year", "tag_programme")
+  } else {
+    # TODO: new
+    colnames(selection) <- c("tags", "final_tags", "dashboards", "overview", "programme", "velocity", "unleash", "createmaker", "curricula", "co-curricula", "journey", "date", "comment", "year", "tag_programme")
+  }
+  
+  # # Rename columns
+  # colnames(selection) <- c("tags", "final_tags", "dashboards", "overview", "programme", "velocity", "unleash", "createmaker", "curricula", "journey", "date", "comment", "year", "tag_programme")
   
   # Convert to date
   selection$date <- as.Date(as.numeric(selection$date)+5, origin = "1904-01-01")
   
-  # Back up current tags_selection.csv file
-  checkDir <- dir(file.path(data_dir, "tags"), pattern = paste0("tags_selection", ".*csv"), full.names = TRUE)
-  checkDir2 <- file.path(backup_dir, "tags")
-  file.copy(checkDir, checkDir2, recursive = TRUE)
-  
-  # Export
-  write_csv(selection, file.path(data_dir,"tags", "tags_selection.csv"))
-  write_csv(selection, file.path(backup_dir, "tags", paste0("tags_selection-",Sys.time(),".csv"))) # Another copy for backup
+  if (save) {
+    # Back up current tags_selection.csv file
+    checkDir <- dir(file.path(data_dir, "tags"), pattern = paste0("tags_selection", ".*csv"), full.names = TRUE)
+    checkDir2 <- file.path(backup_dir, "tags")
+    file.copy(checkDir, checkDir2, recursive = TRUE)
+    
+    # Export
+    write_csv(selection, file.path(data_dir,"tags", "tags_selection.csv"))
+    write_csv(selection, file.path(backup_dir, "tags", paste0("tags_selection-",Sys.time(),".csv"))) # Another copy for backup
+  }  
   
   return(selection)
 }
