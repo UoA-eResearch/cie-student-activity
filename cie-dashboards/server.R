@@ -58,12 +58,12 @@ colnames(all_training) <- c("ID", "date", "programme")
 curricula_programmes = sort(unique(selection$tag_programme[selection$curricula == "Y"]))
 if ("co-curricula" %in% colnames(selection)) {
   cocurricula_programmes = sort(unique(selection$tag_programme[selection$`co-curricula` == "Y"]))
-  # curricula_df = allData %>% mutate(
-  #   programme = case_when(
-  #     programme %in% curricula_programmes ~ "Curricula",
-  #     programme %in% cocurricula_programmes ~ "Co-curricula"
-  #   )
-  # ) %>% filter(!is.na(programme))
+  curricula_df = allData %>% mutate(
+    programme = case_when(
+      programme %in% curricula_programmes ~ "Curricula",
+      programme %in% cocurricula_programmes ~ "Co-curricula"
+    )
+  ) %>% filter(!is.na(programme))
 } else {
   curricula_df = programme_df %>% mutate(
     programme = ifelse(programme %in% curricula_programmes, "Curricula", "Co-curricula")
