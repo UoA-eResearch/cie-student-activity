@@ -1,7 +1,7 @@
 ## CIE Uploads ##
 
 # Settings
-options(java.parameters = "-Xmx2G")
+options(java.parameters = "-Xmx4G")
 system("sudo touch app.R")
 
 # libraries

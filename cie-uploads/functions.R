@@ -1,5 +1,5 @@
 # Settings
-options(java.parameters = "-Xmx2G")
+options(java.parameters = "-Xmx4G")
 
 # Library
 library(tidyverse)
