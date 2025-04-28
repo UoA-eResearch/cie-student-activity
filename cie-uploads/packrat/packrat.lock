@@ -3,11 +3,6 @@ PackratVersion: 0.5.0
 RVersion: 4.1.2
 Repos: CRAN=https://cloud.r-project.org
 
-Package: BH
-Source: CRAN
-Version: 1.69.0-1
-Hash: 15f597ed227897f4f793b6161260f4b9
-
 Package: DBI
 Source: CRAN
 Version: 1.2.3
@@ -19,16 +14,6 @@ Version: 0.33
 Hash: 8924d92bac5f50db75eef0d904efcb44
 Requires: crosstalk, htmltools, htmlwidgets, httpuv, jquerylib,
     jsonlite, magrittr, promises
-
-Package: ISOcodes
-Source: CRAN
-Version: 2019.04.22
-Hash: 5ecbc285cd5964328ba11e5a2a7c48f3
-
-Package: MASS
-Source: CRAN
-Version: 7.3-50
-Hash: e8001243da35880bd81391d80eb4eeae
 
 Package: R6
 Source: CRAN
@@ -124,6 +109,11 @@ Package: clipr
 Source: CRAN
 Version: 0.8.0
 Hash: f8ae5e8ad6b3e416249379deec7e9c6f
+
+Package: codetools
+Source: CRAN
+Version: 0.2-20
+Hash: 6d89077a38420a17c3440dee6d550be5
 
 Package: commonmark
 Source: CRAN
@@ -247,8 +237,8 @@ Package: ggplot2
 Source: CRAN
 Version: 3.5.2
 Hash: cd9418435824fb8b30f29fddba5eb16d
-Requires: MASS, cli, glue, gtable, isoband, lifecycle, rlang, scales,
-    tibble, vctrs, withr
+Requires: cli, glue, gtable, isoband, lifecycle, rlang, scales, tibble,
+    vctrs, withr
 
 Package: glue
 Source: CRAN
