@@ -115,7 +115,6 @@ server <- function(input, output, session) {
       updatePickerInput(session, "baseProgramme", selected = "Velocity Participant", choices = sort(unique(filterData()$programme)))
       
     } else if (input$tab == "unleash") {
-      
       updatePickerInput(session, "baseProgramme", selected = "Unleash Space Participant", choices = sort(unique(filterData()$programme)))
       updatePickerInput(session, "unleashStudioMonth", selected = sort(unique(studio_df()$month))[1:4], choices = sort(unique(studio_df()$month)))
       
@@ -427,7 +426,7 @@ server <- function(input, output, session) {
       guides(color=FALSE) +
       coord_flip() +
       ggtitle("Faculty split overall") +
-      theme_minimal() + 
+      theme_minimal(base_size = 14) + 
       scale_fill_tableau() + scale_colour_tableau() +
       labs(x="", y="")
   })
@@ -441,7 +440,7 @@ server <- function(input, output, session) {
       guides(color=FALSE) +
       coord_flip() +
       ggtitle("Programme split overall") +
-      theme_minimal() + 
+      theme_minimal(base_size = 14) + 
       scale_fill_tableau() + scale_colour_tableau() +
       labs(x="", y="")
   })
@@ -449,9 +448,16 @@ server <- function(input, output, session) {
   # Programme split by faculty
   output$programmeSplitFaculty <- renderPlotly({
     p <- heatmap_df() %>% 
-      group_by(`programme`,`Owner.of.Major.Spec.Module`, year) %>% 
-      summarise(count=n()) %>%
-      complete(`programme` =unique(programme),`Owner.of.Major.Spec.Module` = unique(filterData()$`Owner.of.Major.Spec.Module`), year=unique(heatmap_df()$year)) %>% 
+      group_by(programme,`Owner.of.Major.Spec.Module`, year) %>% 
+      # summarise(count = n()) %>%
+      # complete(`programme` =unique(programme),`Owner.of.Major.Spec.Module` = unique(filterData()$`Owner.of.Major.Spec.Module`), year=unique(heatmap_df()$year)) %>%
+      summarise(count = n(), .groups = "drop") %>%
+      complete(
+        programme = unique(heatmap_df()$programme),
+        `Owner.of.Major.Spec.Module` = unique(heatmap_df()$`Owner.of.Major.Spec.Module`), 
+        year = unique(heatmap_df()$year),
+        fill = list(count = 0)
+      ) %>%
       distinct() %>% 
       ggplot(aes(`Owner.of.Major.Spec.Module`,`programme`)) +
       geom_raster(aes(fill=count)) +
