@@ -379,7 +379,7 @@ server <- function(input, output, session) {
       geom_text(aes(y=count+200), alpha=0.8) +
       ggtitle("Total participants by year") +
       theme_minimal() + guides(fill=FALSE, color=FALSE) + labs(y="", x = "")
-  })
+  }, res = 96)
   output$uniquePlot <- renderPlotly({
     p1 <- overviewPlot_df() %>% 
       select(ID, year, programme) %>%
@@ -429,7 +429,7 @@ server <- function(input, output, session) {
       theme_minimal(base_size = 14) + 
       scale_fill_tableau() + scale_colour_tableau() +
       labs(x="", y="")
-  })
+  }, res = 96)
   
   # Programme
   output$programmeN <- renderPlot({
@@ -443,7 +443,7 @@ server <- function(input, output, session) {
       theme_minimal(base_size = 14) + 
       scale_fill_tableau() + scale_colour_tableau() +
       labs(x="", y="")
-  })
+  }, res = 96)
   
   # Programme split by faculty
   output$programmeSplitFaculty <- renderPlotly({
@@ -496,7 +496,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
     #scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$curriculaRepeatPlot <- output$programmeRepeatPlot <- renderPlot({
     overviewPlot_df() %>% 
@@ -515,7 +515,7 @@ server <- function(input, output, session) {
       ggtitle("Repeat participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-  })
+  }, res = 96)
   
   output$curriculaFacultyPlot <- output$programmeFacultyPlot <- renderPlot({
     for (label in names(filtermap)) {
@@ -540,7 +540,7 @@ server <- function(input, output, session) {
                  scale_fill_tableau() + scale_colour_tableau())
       }
     }
-  })
+  }, res = 96)
   
   output$curriculaDepartmentPlot <- output$programmeDepartmentPlot <- renderPlotly({
     if (length(input$baseYear)>1) {
@@ -602,7 +602,7 @@ server <- function(input, output, session) {
                   scale_fill_tableau() + scale_colour_tableau())
       }
     }
-  })
+  }, res = 96)
   
   output$curriculaDegreePlot <- output$programmeDegreePlot <- renderPlotly({
     key = ""
@@ -685,7 +685,7 @@ server <- function(input, output, session) {
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       guides(colour=FALSE) + labs(y="", x = "") +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$curriculaEthinicityPlot <- output$programmeEthinicityPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -705,7 +705,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$curriculaResidencyPlot <- output$programmeResidencyPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -725,7 +725,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$curriculaIwiPlot <- output$programmeIwiPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -746,7 +746,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   ## Velocity Dashboard
   output$velocityUniquePlot <- renderPlot({
@@ -762,7 +762,7 @@ server <- function(input, output, session) {
       ggtitle("Unique participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-  })
+  }, res = 96)
   
   output$velocityRepeatPlot <- renderPlot({
     overviewPlot_df() %>% 
@@ -781,7 +781,7 @@ server <- function(input, output, session) {
       ggtitle("Repeat participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-  })
+  }, res = 96)
   
   output$velocityFacultyPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -798,7 +798,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$velocityDepartmentPlot <- renderPlotly({
     if (length(input$baseYear)>1) {
@@ -852,7 +852,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$velocityDegreePlot <- renderPlotly({
     if (length(input$baseYear)>1) {
@@ -906,7 +906,7 @@ server <- function(input, output, session) {
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       guides(colour=FALSE) + labs(y="", x = "") +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$velocityEthinicityPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -922,7 +922,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$velocityResidencyPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -938,7 +938,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$velocityIwiPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -955,7 +955,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   ## Unleash Dashboard
   output$unleashUniquePlot <- renderPlot({
@@ -971,7 +971,7 @@ server <- function(input, output, session) {
       ggtitle("Unique participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-  })
+  }, res = 96)
   
   output$unleashRepeatPlot <- renderPlot({
     overviewPlot_df() %>% 
@@ -990,7 +990,7 @@ server <- function(input, output, session) {
       ggtitle("Repeat participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-  })
+  }, res = 96)
   
   output$unleashFacultyPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -1007,7 +1007,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$unleashDepartmentPlot <- renderPlotly({
     if (length(input$baseYear)>1) {
@@ -1060,7 +1060,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$unleashDegreePlot <- renderPlotly({
     if (length(input$baseYear)>1) {
@@ -1114,7 +1114,7 @@ server <- function(input, output, session) {
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       guides(colour=FALSE) + labs(y="", x = "") +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$unleashEthinicityPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -1130,7 +1130,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$unleashResidencyPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -1146,7 +1146,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$unleashIwiPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -1163,7 +1163,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$unleashStudioTimeseriesPlot <- renderPlotly({
     # Repeat count
@@ -1211,7 +1211,7 @@ server <- function(input, output, session) {
       guides(colour=FALSE) + labs(y="", x = "") +
       #theme(axis.text.x = element_text(angle = -20, vjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   ## Create Maker Dashboard
   output$createmakerUniquePlot <- renderPlot({
@@ -1227,7 +1227,7 @@ server <- function(input, output, session) {
       ggtitle("Unique participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-  })
+  }, res = 96)
   
   output$createmakerRepeatPlot <- renderPlot({
     overviewPlot_df() %>% 
@@ -1246,7 +1246,7 @@ server <- function(input, output, session) {
       ggtitle("Repeat participants by year") +
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(panel.background = element_rect(fill="grey99", colour="grey99"))
-  })
+  }, res = 96)
   
   output$createmakerFacultyPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -1262,7 +1262,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$createmakerDepartmentPlot <- renderPlotly({
     if (length(input$baseYear)>1) {
@@ -1315,7 +1315,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$createmakerDegreePlot <- renderPlotly({
     if (length(input$baseYear)>1) {
@@ -1369,7 +1369,7 @@ server <- function(input, output, session) {
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       guides(colour=FALSE) + labs(y="", x = "") +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$createmakerEthinicityPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -1385,7 +1385,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$createmakerResidencyPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -1401,7 +1401,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$createmakerIwiPlot <- renderPlot({
     generalPlot_df() %>% 
@@ -1418,7 +1418,7 @@ server <- function(input, output, session) {
       theme_minimal() + guides(colour=FALSE) + labs(y="", x = "") +
       theme(axis.text.x = element_text(angle = 45, hjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   # Create Maker Studio
   output$createmakerStudioTimeseriesPlot <- renderPlotly({
@@ -1468,7 +1468,7 @@ server <- function(input, output, session) {
       guides(colour=FALSE) + labs(y="", x = "") +
       #theme(axis.text.x = element_text(angle = -20, vjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   output$createmakerStudioEquipmentPlot <- renderPlot({
     studio_df() %>% 
@@ -1485,7 +1485,7 @@ server <- function(input, output, session) {
       theme(panel.grid.major = element_blank(), panel.background = element_rect(fill="grey97", colour = "white")) + 
       guides(colour=FALSE) + labs(y="", x = "") +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   # Journey map
   output$journeyTotal <- renderText({
@@ -1500,7 +1500,7 @@ server <- function(input, output, session) {
       geom_bar(stat="identity", position = position_dodge2(width = 0.9, preserve = "single")) +
       geom_text(aes(label=num_students), position = position_dodge2(width = 0.9, preserve = "single"), vjust=0) +
       theme_minimal() 
-  })
+  }, res = 96)
   
   output$journeyTable <- renderDataTable({
     df <- journey_table_df() %>% select(-num_students)
@@ -1537,7 +1537,7 @@ server <- function(input, output, session) {
       guides(colour=FALSE) + labs(y="", x = "") +
       #theme(axis.text.x = element_text(angle = -20, vjust=1) , panel.background = element_rect(fill="grey99", colour="grey99")) +
       scale_fill_tableau() + scale_colour_tableau()
-  })
+  }, res = 96)
   
   observeEvent(input$updateTotal, {
     updatePickerInput(session, "journeyGroup", selected = journey_table_df()$total[1], choices = sort(unique(journey_table_df()$total)))
@@ -1567,7 +1567,7 @@ server <- function(input, output, session) {
         panel.background = element_rect(fill="grey99")
       ) +
       labs(x="", y="")
-  })
+  }, res = 96)
   
   output$journeySankey <- renderSankeyNetwork({
     df <- journey_sankey_df()
