@@ -187,7 +187,8 @@ server <- function(input, output, session) {
       # Import From.*xlsx
       else if (input$saveType == "From Rachel - " ) {
         if (input$saveSheet %in% c("Student", "Applicant", "No Affil", "No citizenship")) {
-          df <- read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 2)
+          # df <- read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 2)
+          df = read_excel(uploadPath, sheet = input$saveSheet, col_names = TRUE)
           #print(read.xlsx2(uploadPath, sheetName=input$saveSheet, startRow = 2))
           
           # Add column names row
@@ -198,9 +199,13 @@ server <- function(input, output, session) {
           #df <- add_row(df, .before = 1)
           
           # Check if column names are consistent
-          columnCondition <- all(sort(colnames(read.xlsx2("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheetName = input$saveSheet, startRow = 2))) == sort(colnames(df)))
+          # columnCondition <- all(sort(colnames(read.xlsx2("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheetName = input$saveSheet, startRow = 2))) == sort(colnames(df)))
+          # validate(
+          #   need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read.xlsx2("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheetName = input$saveSheet, startRow = 2)), colnames(df))))
+          # )
+          columnCondition <- all(sort(colnames(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = input$saveSheet, col_names = TRUE, skip = 1))) == sort(colnames(df)))
           validate(
-            need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read.xlsx2("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheetName = input$saveSheet, startRow = 2)), colnames(df))))
+            need(columnCondition==TRUE, message=paste0("Error in column names: ",setdiff(colnames(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = input$saveSheet, col_names = TRUE, skip = 1)), colnames(df))))
           )
           
         }
