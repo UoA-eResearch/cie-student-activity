@@ -55,6 +55,19 @@ all_training <- read_csv("../data/all_training.csv", col_types = cols(ID = col_c
 all_studio <- read_csv("../data/all_studio.csv", col_types = cols(ID = col_character(), year = col_character())) %>% filter(!is.na(timestamp)) %>% distinct()
 colnames(all_training) <- c("ID", "date", "programme")
 
+# New Faculty names, 2025 onwards
+# 'Arts' and 'Education & Social Work' -> 'Arts and Education'
+# 'Engineering' and 'Creative Arts & Industries' -> 'Engineering and Design'
+overview_df = overview_df %>% mutate(
+  !!sym(filtermap$Faculty) := case_when(
+    (!!sym(filtermap$Year) >= 2025) & (!!sym(filtermap$Faculty) == "Arts") ~ "Arts and Education",
+    (!!sym(filtermap$Year) >= 2025) & (!!sym(filtermap$Faculty) == "Education & Social Work") ~ "Arts and Education",
+    (!!sym(filtermap$Year) >= 2025) & (!!sym(filtermap$Faculty) == "Engineering") ~ "Engineering and Design",
+    (!!sym(filtermap$Year) >= 2025) & (!!sym(filtermap$Faculty) == "Creative Arts & Industries") ~ "Engineering and Design",
+    TRUE ~ !!sym(filtermap$Faculty)
+  )
+)
+
 curricula_programmes = sort(unique(selection$tag_programme[selection$curricula == "Y"]))
 if ("co-curricula" %in% colnames(selection)) {
   cocurricula_programmes = sort(unique(selection$tag_programme[selection$`co-curricula` == "Y"]))
