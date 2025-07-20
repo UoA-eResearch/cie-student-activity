@@ -41,6 +41,26 @@ filter_data <- function(dashboard, data_df, selection_df) {
   return(df2)
 }
 
+post_changes = function(df) {
+  if(!(filtermap$Faculty %in% colnames(df))) {
+    return(df)
+  }
+  
+  # New Faculty names, 2025 onwards
+  # 'Arts' and 'Education & Social Work' -> 'Arts and Education'
+  # 'Engineering' and 'Creative Arts & Industries' -> 'Engineering and Design'
+  df %>% mutate(
+    !!sym(filtermap$Faculty) := case_when(
+      (!!sym(filtermap$Year) >= 2025) & (!!sym(filtermap$Faculty) == "Arts") ~ "Arts and Education",
+      (!!sym(filtermap$Year) >= 2025) & (!!sym(filtermap$Faculty) == "Education & Social Work") ~ "Arts and Education",
+      (!!sym(filtermap$Year) >= 2025) & (!!sym(filtermap$Faculty) == "Engineering") ~ "Engineering and Design",
+      (!!sym(filtermap$Year) >= 2025) & (!!sym(filtermap$Faculty) == "Creative Arts & Industries") ~ "Engineering and Design",
+      TRUE ~ !!sym(filtermap$Faculty)
+    )
+  )
+}
+
+
 # Import data
 allData <- read_csv("../data/all.csv", col_types = cols(ID = col_character()))
 selection <- read_csv("../data/tags/tags_selection.csv")
@@ -55,18 +75,7 @@ all_training <- read_csv("../data/all_training.csv", col_types = cols(ID = col_c
 all_studio <- read_csv("../data/all_studio.csv", col_types = cols(ID = col_character(), year = col_character())) %>% filter(!is.na(timestamp)) %>% distinct()
 colnames(all_training) <- c("ID", "date", "programme")
 
-# New Faculty names, 2025 onwards
-# 'Arts' and 'Education & Social Work' -> 'Arts and Education'
-# 'Engineering' and 'Creative Arts & Industries' -> 'Engineering and Design'
-overview_df = overview_df %>% mutate(
-  !!sym(filtermap$Faculty) := case_when(
-    (!!sym(filtermap$Year) >= 2025) & (!!sym(filtermap$Faculty) == "Arts") ~ "Arts and Education",
-    (!!sym(filtermap$Year) >= 2025) & (!!sym(filtermap$Faculty) == "Education & Social Work") ~ "Arts and Education",
-    (!!sym(filtermap$Year) >= 2025) & (!!sym(filtermap$Faculty) == "Engineering") ~ "Engineering and Design",
-    (!!sym(filtermap$Year) >= 2025) & (!!sym(filtermap$Faculty) == "Creative Arts & Industries") ~ "Engineering and Design",
-    TRUE ~ !!sym(filtermap$Faculty)
-  )
-)
+overview_df = post_changes(overview_df)
 
 curricula_programmes = sort(unique(selection$tag_programme[selection$curricula == "Y"]))
 if ("co-curricula" %in% colnames(selection)) {
@@ -89,19 +98,19 @@ server <- function(input, output, session) {
   # Reactivate dataframes
   filterData <- reactive({
     if (input$tab == "overview") {
-      return(overview_df)
+      return(post_changes(overview_df))
     } else if (input$tab == "programme") {
-      return(programme_df)
+      return(post_changes(programme_df))
     } else if (input$tab == "velocity") {
-      return(velocity_df)
+      return(post_changes(velocity_df))
     } else if (input$tab == "unleash") {
-      return(unleash_df)
+      return(post_changes(unleash_df))
     } else if (input$tab =="journey") {
-      return(journey_df)
+      return(post_changes(journey_df))
     } else if (input$tab == "createmaker") {
-      return(createmaker_df)
+      return(post_changes(createmaker_df))
     } else if (input$tab == "curricula") {
-      return(curricula_df)
+      return(post_changes(curricula_df))
     }
   })
   
