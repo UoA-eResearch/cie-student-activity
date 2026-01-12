@@ -427,7 +427,7 @@ server <- function(input, output, session) {
       geom_bar(stat = "identity" ) +
       geom_text(aes(label=uniqueCount, y=uniqueCount+50), size=3, alpha=0.5) +
       geom_text(aes(label=paste0(repeatCount, " (", round(repeatCount*100/uniqueCount,0),"%)"), y=repeatCount*0.5), size=3, alpha=0.5) +
-      ggtitle("Unique participants by year") +
+      ggtitle("Unique vs Repeat participants by year") +
       theme_minimal() + guides(fill=FALSE) + labs(y="", x = "") +
       scale_fill_brewer()
     
