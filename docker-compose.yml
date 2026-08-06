@@ -1,0 +1,13 @@
+services:
+  shiny:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shiny:latest
+    container_name: shiny
+    ports:
+      - "3838:3838"
+    volumes:
+      - ${DATA_DIR:-./data}:/srv/shiny-server/data
+      - ${BACKUP_DIR:-./backup_data}:/srv/shiny-server/backup_data
+    restart: unless-stopped

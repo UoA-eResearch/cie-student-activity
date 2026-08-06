@@ -1,0 +1,20 @@
+.git
+.Rproj.user
+.Rhistory
+.RData
+.Renviron
+*.Rproj
+
+# Runtime data is mounted, not baked into image
+data/
+backup_data/
+
+# renv local library cache should not be sent in context
+renv/library/
+
+# Optional large artifacts
+*.zip
+*.tar.gz
+*.Rcheck/
+*_cache/
+cache/
