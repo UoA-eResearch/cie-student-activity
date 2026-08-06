@@ -1,5 +1,20 @@
 source(repo_path("cie-uploads", "functions.R"), local = TRUE)
 
+test_that("uploaded files are archived outside the processing directories", {
+  root <- file.path(tempdir(), paste0("upload-archive-", as.integer(Sys.time()), "-", sample.int(100000, 1)))
+  data_dir <- file.path(root, "data")
+  dir.create(data_dir, recursive = TRUE, showWarnings = FALSE)
+
+  source_file <- file.path(root, "sample.xlsx")
+  writeLines("raw upload", source_file)
+
+  archived <- persist_uploaded_file(source_file, data_dir, "2026", "sample.xlsx")
+
+  expect_true(file.exists(archived))
+  expect_identical(archived, file.path(data_dir, "uploads", "2026", "sample.xlsx"))
+  expect_false(file.exists(file.path(data_dir, "2026", "sample.xlsx")))
+})
+
 test_that("csv backups are only versioned when content changes", {
   root <- file.path(tempdir(), paste0("backup-utils-", as.integer(Sys.time()), "-", sample.int(100000, 1)))
   data_dir <- file.path(root, "data")

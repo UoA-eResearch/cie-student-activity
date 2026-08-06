@@ -57,6 +57,7 @@ COPY renv.lock ./renv.lock
 # Keep renv libraries outside the app directory so later COPY doesn't overwrite them.
 ENV RENV_PATHS_LIBRARY_ROOT=/usr/local/lib/R/renv
 ENV RENV_PATHS_CACHE=/root/.cache/R/renv
+ENV RENV_CONFIG_AUTOLOADER_ENABLED=FALSE
 
 # Prefer precompiled Linux binaries where available (jammy) to avoid compiling from source.
 # Falls back to source if a binary is unavailable for a package/version.
@@ -66,7 +67,8 @@ ENV CHROMOTE_CHROME=/usr/local/bin/chrome
 # Install renv and restore pinned dependencies from renv.lock.
 RUN --mount=type=cache,target=/root/.cache/R/renv,sharing=locked \
     R -q -e "install.packages('renv', repos = 'https://cloud.r-project.org')" \
-    && R -q -e "renv::consent(TRUE); renv::restore(project = '/srv/shiny-server', lockfile = '/srv/shiny-server/renv.lock', prompt = FALSE)"
+    && R -q -e "renv::consent(TRUE); renv::restore(project = '/srv/shiny-server', lockfile = '/srv/shiny-server/renv.lock', prompt = FALSE)" \
+    && R -q -e "install.packages('openxlsx', repos = 'https://cloud.r-project.org')"
 
 # Copy the rest of the application source.
 COPY . ./

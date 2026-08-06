@@ -9,7 +9,6 @@ library(shiny)
 library(tidyr)
 library(tidyverse)
 library(readxl)
-library(xlsx)
 library(plyr)
 library(dplyr)
 library(widyr)
@@ -317,7 +316,13 @@ server <- function(input, output, session) {
   
   observeEvent(input$save, {
     req(input$uploadFile, input$saveType, input$saveYear)
-    uploadPath <- basename(saveName())
+    saved_upload_path <- persist_uploaded_file(
+      input$uploadFile$datapath,
+      data_dir,
+      input$saveYear,
+      saveName()
+    )
+    source_path <- saved_upload_path
     output_path <- NULL
     
     # create subdirectory by year if it doesn't exist
@@ -342,106 +347,94 @@ server <- function(input, output, session) {
       checkDir2 <- file.path(backup_dir, input$saveYear)
     }
     
-    withProgress(message = "Save uploaded files to server", style = "notification", value = 0.1, {
-      # save uploaded files to data and backup data directories
-      if (file_ext(uploadPath) == "csv") {
-        incProgress(.4)
-        Sys.sleep(.1)
-        
-        # Save .csv data files
-        output_path <- file.path(data_dir, input$saveYear, saveName())
-        write.csv(data(), file = output_path, row.names = FALSE, quote = TRUE)
-        
-      } else if (file_ext(uploadPath) == "xlsx") {
-        incProgress(.4)
-        Sys.sleep(.1)
-        
-        if (input$saveType == "tags-selection") {
-          
-          # Save tag files
-          output_path <- file.path(data_dir, "tags", saveName())
-          write.xlsx2(data(), file = output_path, sheetName = "Tags", row.names = FALSE)
-          
-        } else if (input$saveType == "From Rachel - ") { 
-          # FOR SSO  
-          # Create an empty workbook
-          wb = createWorkbook()
-          
-          ## Read every sheet and rbind after
-          for (availSheet in intersect(excel_sheets(input$uploadFile$datapath), c("Student", "Applicant", "No Affil", "No citizenship"))) {
-            # Create an empty sheet
-            sheet = createSheet(wb, availSheet)
-            
-            # Read the sheet
-            df <- read.xlsx2(input$uploadFile$datapath, sheetName=availSheet, startRow = 2, stringsAsFactors = FALSE)
-            cols <- as.data.frame(t(colnames(df))) # Add column names row
-            colnames(cols) <- colnames(df)
-            df <- rbind.fill(cols, df)
-            #df <- add_row(df, .before = 1) # Add an empty row
-            
-            # Add data frame to the sheet
-            addDataFrame(df, sheet = sheet, startColumn = 1, row.names = FALSE)
-          }
-          
-          # Save .xlsx data files
+    status <- tryCatch({
+      withProgress(message = "Save uploaded files to server", style = "notification", value = 0.1, {
+        # save uploaded files to data and backup data directories
+        if (file_ext(source_path) == "csv") {
+          incProgress(.4)
+          Sys.sleep(.1)
+
+          # Save .csv data files
           output_path <- file.path(data_dir, input$saveYear, saveName())
-          saveWorkbook(wb, output_path)
-          
-        } else if (input$saveType == "Original - ") {
-          # FOR CRM
-          # Save .xlsx data files
-          output_path <- file.path(data_dir, input$saveYear, saveName())
-          write.xlsx2(data(), file = output_path, sheetName = "contacts", row.names = FALSE)
-          
-        } else if (input$saveType == "Members and Training ") {
-          # FOR TRAINING
-          # Create an empty workbook
-          wb = createWorkbook()
-          
-          ## Read every sheet and rbind after
-          for (availSheet in intersect(excel_sheets(input$uploadFile$datapath), c("3D Printer", "Laser Cutter", "3D Scanner", "Vinyl Cutter","CNC Router", "Sewing Machine", "Soldering and Desoldering Stati", "Hand and Power Tools"))) {
+          write.csv(data(), file = output_path, row.names = FALSE, quote = TRUE)
+
+        } else if (file_ext(source_path) == "xlsx") {
+          incProgress(.4)
+          Sys.sleep(.1)
+
+          if (input$saveType == "tags-selection") {
+
+            # Save tag files
+            output_path <- file.path(data_dir, "tags", saveName())
+            openxlsx::write.xlsx(data(), file = output_path, sheetName = "Tags", rowNames = FALSE, overwrite = TRUE)
+
+          } else if (input$saveType == "From Rachel - ") {
+            # FOR SSO
+            sheets <- list()
+
+            ## Read every sheet and rbind after
+            for (availSheet in intersect(excel_sheets(source_path), c("Student", "Applicant", "No Affil", "No citizenship"))) {
+              # Read the sheet
+              df <- openxlsx::read.xlsx(source_path, sheet = availSheet, startRow = 2, detectDates = FALSE, check.names = FALSE)
+              cols <- as.data.frame(t(colnames(df))) # Add column names row
+              colnames(cols) <- colnames(df)
+              sheets[[availSheet]] <- rbind.fill(cols, df)
+            }
+
+            # Save .xlsx data files
+            output_path <- file.path(data_dir, input$saveYear, saveName())
+            openxlsx::write.xlsx(sheets, file = output_path, overwrite = TRUE)
+
+          } else if (input$saveType == "Original - ") {
+            # FOR CRM
+            # Save .xlsx data files
+            output_path <- file.path(data_dir, input$saveYear, saveName())
+            openxlsx::write.xlsx(data(), file = output_path, sheetName = "contacts", rowNames = FALSE, overwrite = TRUE)
+
+          } else if (input$saveType == "Members and Training ") {
             # FOR TRAINING
-            # Create an empty sheet
-            sheet = createSheet(wb, availSheet)
-            
-            # Read the sheet
-            df <- read.xlsx2(input$uploadFile$datapath, sheetName=availSheet, startRow = 1, stringsAsFactors = FALSE)
-            
-            # Add data frame to the sheet
-            addDataFrame(df, sheet = sheet, startColumn = 1, row.names = FALSE)
-          }
-          
-          # Save .xlsx data files
-          output_path <- file.path(data_dir, "training", saveName())
-          saveWorkbook(wb, output_path)
-          
-        } else if (input$saveType %in%  c("C&M Space Sign In ", "Innovation Hub Sign In ")) {
-          # FOR SIGNINS
-          output_path <- file.path(data_dir, input$saveYear, saveName())
-          write.xlsx2(data(), file = output_path, sheetName = "Form Responses 1", row.names = FALSE)
-        }
-      }
+            sheets <- list()
 
-      if (!is_empty(checkDir)) {
-        backup_pattern <- paste0("^", escape_regex(input$saveType))
-        for (existing_file in checkDir) {
-          if (!same_file_contents(existing_file, output_path)) {
-            backup_file_if_unique(existing_file, checkDir2, pattern = backup_pattern)
-          }
-          file.remove(existing_file)
-        }
-      }
+            ## Read every sheet and rbind after
+            for (availSheet in intersect(excel_sheets(source_path), c("3D Printer", "Laser Cutter", "3D Scanner", "Vinyl Cutter","CNC Router", "Sewing Machine", "Soldering and Desoldering Stati", "Hand and Power Tools"))) {
+              # Read the sheet
+              sheets[[availSheet]] <- openxlsx::read.xlsx(source_path, sheet = availSheet, startRow = 1, detectDates = FALSE, check.names = FALSE)
+            }
 
-      incProgress(.4)
-      Sys.sleep(.1)
-      
-      # print output message
-      output$status <- renderPrint({"Saving sucessfully!"})
+            # Save .xlsx data files
+            output_path <- file.path(data_dir, "training", saveName())
+            openxlsx::write.xlsx(sheets, file = output_path, overwrite = TRUE)
+
+          } else if (input$saveType %in%  c("C&M Space Sign In ", "Innovation Hub Sign In ")) {
+            # FOR SIGNINS
+            output_path <- file.path(data_dir, input$saveYear, saveName())
+            openxlsx::write.xlsx(data(), file = output_path, sheetName = "Form Responses 1", rowNames = FALSE, overwrite = TRUE)
+          }
+        }
+
+        if (!is_empty(checkDir)) {
+          backup_pattern <- paste0("^", escape_regex(input$saveType))
+          for (existing_file in checkDir) {
+            if (!same_file_contents(existing_file, output_path)) {
+              backup_file_if_unique(existing_file, checkDir2, pattern = backup_pattern)
+            }
+            file.remove(existing_file)
+          }
+        }
+
+        incProgress(.4)
+        Sys.sleep(.1)
+
+        # print output message
+        output$status <- renderPrint({"Saving sucessfully!"})
+      })
+
+      # run the data management script functions
+      process_write(data_dir, backup_dir)
+    }, error = function(e) {
+      paste0("Saved raw upload at ", source_path, ", but processing failed: ", conditionMessage(e))
     })
-    
-    # run the data management script functions
-    status <- process_write(data_dir, backup_dir)
-    
+
     # print output messsage
     output$status <- renderPrint({status})
   })

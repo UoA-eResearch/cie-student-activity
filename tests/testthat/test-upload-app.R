@@ -27,6 +27,9 @@ test_that("upload app updates sheet choices, previews data, and saves in a sandb
   app$click("save")
   app$wait_for_js("document.querySelector('#status').textContent.includes('Success!')", timeout = 120000)
 
+  archived_files <- list.files(file.path(sandbox$data_dir, "uploads", format(Sys.Date(), "%Y")), pattern = "^From Rachel - .*\\.xlsx$", full.names = TRUE)
+  expect_gte(length(archived_files), 1)
+
   saved_files <- list.files(file.path(sandbox$data_dir, format(Sys.Date(), "%Y")), pattern = "^From Rachel - .*\\.xlsx$", full.names = TRUE)
   expect_gte(length(saved_files), 1)
   expect_true(file.exists(file.path(sandbox$data_dir, "all.csv")))

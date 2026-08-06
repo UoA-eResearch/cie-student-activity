@@ -8,7 +8,6 @@ library(plyr)
 library(dplyr)
 library(tidyr)
 library(widyr)
-library(xlsx)
 library(reshape2)
 library(tools)
 library(networkD3)
@@ -39,6 +38,15 @@ ensure_directory <- function(path) {
   if (!dir.exists(path)) {
     dir.create(path, recursive = TRUE, showWarnings = FALSE)
   }
+}
+
+persist_uploaded_file <- function(source_path, data_dir, year, file_name) {
+  upload_dir <- file.path(data_dir, "uploads", year)
+  ensure_directory(upload_dir)
+
+  destination <- file.path(upload_dir, file_name)
+  file.copy(source_path, destination, overwrite = TRUE)
+  destination
 }
 
 same_file_contents <- function(path_a, path_b) {
@@ -302,7 +310,7 @@ load_sso <- function(data_dir) {
   c["Birthdate"] <- "integer"
   # Read and clean sheet
   student <- tibble(updated = basename(dirname(files[1])), filename = files[1]) %>% 
-    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c, stringsAsFactors = FALSE))) %>% 
+    mutate(file_contents = map(filename, ~openxlsx::read.xlsx(file.path(.), sheet = "Student", startRow = 2, detectDates = FALSE, check.names = FALSE))) %>% 
     select(-filename) %>% 
     unnest() %>% 
     group_by(ID) %>%
@@ -315,7 +323,7 @@ load_sso <- function(data_dir) {
   colNames  <- colNames[-4]
   for (file in isStudent) {
     studentMock <- tibble(updated = basename(dirname(file)), filename = file) %>% 
-      mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Student", startRow = 2, colClasses = c, stringsAsFactors = FALSE))) %>% 
+      mutate(file_contents = map(filename, ~openxlsx::read.xlsx(file.path(.), sheet = "Student", startRow = 2, detectDates = FALSE, check.names = FALSE))) %>% 
       select(-filename) %>% 
       unnest() %>% 
       group_by(ID) %>%
@@ -343,7 +351,7 @@ load_sso <- function(data_dir) {
   isAppl <- files[which(unlist(isAppl))]
   # Read excel
   applicant <- tibble(updated = basename(dirname(isAppl)), filename = isAppl) %>% 
-    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="Applicant", startRow = 2, stringsAsFactors = FALSE))) %>% 
+    mutate(file_contents = map(filename, ~openxlsx::read.xlsx(file.path(.), sheet = "Applicant", startRow = 2, detectDates = FALSE, check.names = FALSE))) %>% 
     select(-filename) %>% 
     unnest() %>% 
     select(updated, ID, Sex, Age, `Residency.Status`, `Ethnic.Group`, `Ethnicity`, Iwi, Descr, NSN, Descr.1)
@@ -359,7 +367,7 @@ load_sso <- function(data_dir) {
   isAffil <- files[which(unlist(isAffil))]
   # Read excel
   affil <- tibble(updated = basename(dirname(isAffil)), filename = isAffil) %>% 
-    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="No Affil", startRow = 2,  stringsAsFactors = FALSE))) %>% 
+    mutate(file_contents = map(filename, ~openxlsx::read.xlsx(file.path(.), sheet = "No Affil", startRow = 2, detectDates = FALSE, check.names = FALSE))) %>% 
     select(-filename) %>% 
     unnest() %>% 
     select(updated, ID, Sex, NSN, `Ethnic.grp.description`, `Citizenship.Passport`, `Descr`)
@@ -381,7 +389,7 @@ load_sso <- function(data_dir) {
   isCitizenship <- files[which(unlist(isCitizenship))]
   # Read excel
   citizenship <- tibble(updated = basename(dirname(isCitizenship)), filename = isCitizenship) %>% 
-    mutate(file_contents = map(filename, ~read.xlsx2(file.path(.), sheetName="No citizenship", startRow = 2,  stringsAsFactors = FALSE))) %>% 
+    mutate(file_contents = map(filename, ~openxlsx::read.xlsx(file.path(.), sheet = "No citizenship", startRow = 2, detectDates = FALSE, check.names = FALSE))) %>% 
     select(-filename) %>% 
     unnest() %>% 
     select(-`Display.Name`, -`Birthdate`)
@@ -633,7 +641,7 @@ load_training <- function(data_dir) {
   availSheets <- excel_sheets(file)
   
   # Read in the data
-  training <- map_df(availSheets, ~read.xlsx2(file, sheetName = ., startRow = 1, stringAsFactors = FALSE)) %>% distinct() %>% select(`Date.Stamp...do.not.copy.into.here`, `ID`, `Tag`, `Tag.1`, `Tag.2`)
+  training <- map_df(availSheets, ~openxlsx::read.xlsx(file, sheet = ., startRow = 1, detectDates = FALSE, check.names = FALSE)) %>% distinct() %>% select(`Date.Stamp...do.not.copy.into.here`, `ID`, `Tag`, `Tag.1`, `Tag.2`)
   colnames(training) <- c("date", "ID", "Tag", "Tag.1", "Tag.2")
   
   # Filter out NAs rows
