@@ -51,6 +51,7 @@ BACKUP_DIR=$(readlink -f backup_data)
 docker run -d --name shiny -p 3838:3838 \
 	--group-add 100 \
 	--group-add 998 \
+	-v "$(readlink -f shiny-server.conf)":/etc/shiny-server/shiny-server.conf:ro \
 	-v "$DATA_DIR":/srv/shiny-server/data \
 	-v "$BACKUP_DIR":/srv/shiny-server/backup_data \
 	shiny
@@ -91,6 +92,7 @@ $COMPOSE_CMD down
 ```
 
 If `DATA_DIR` and `BACKUP_DIR` are not set, compose falls back to `./data` and `./backup_data`.
+The compose service also bind-mounts `./shiny-server.conf` into `/etc/shiny-server/shiny-server.conf`.
 
 ## Health Checks
 
@@ -100,6 +102,39 @@ curl -i http://localhost:3838/cie-uploads/
 ```
 
 Expected: HTTP 200 for both routes.
+
+## Tests
+
+Run all tests inside the `shiny` container (recommended):
+
+```bash
+chmod +x tests/run_in_container.sh tests/test_apps_http.sh
+./tests/run_in_container.sh
+# By default this rebuilds the image so latest tests/app code are included.
+# Use REBUILD=0 to skip rebuild when you only want to rerun tests.
+# REBUILD=0 ./tests/run_in_container.sh
+```
+
+This runs:
+
+- `tests/testthat.R`, which runs a `testthat` suite covering:
+- deployed route reachability inside the container
+- mounted data/backup directory writability
+- upload sheet-choice regression checks
+- `shinytest2` browser-driven dashboard tab coverage
+- `shinytest2` browser-driven upload preview, save, and reload coverage using sandboxed data directories
+
+Run the upload regression test (covers SSO selection with no file attached):
+
+```bash
+Rscript tests/test_upload_sheets.R
+```
+
+Run HTTP smoke tests for both apps:
+
+```bash
+./tests/test_apps_http.sh
+```
 
 ## Troubleshooting
 

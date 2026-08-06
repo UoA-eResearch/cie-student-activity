@@ -17,8 +17,9 @@ library(widyr)
 library(DT)
 library(tools)
 source("functions.R")
-data_dir <- "../data"
-backup_dir <- "../backup_data"
+source("sheet_choices.R")
+data_dir <- Sys.getenv("CIE_DATA_DIR", unset = "../data")
+backup_dir <- Sys.getenv("CIE_BACKUP_DIR", unset = "../backup_data")
 
 # Define UI for data upload app ----
 ui <- fluidPage(
@@ -98,9 +99,13 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   # Update the filers based on selected year
   observe({
-    if (input$saveType %in% c("From Rachel - ", "Members and Training ")) {
-      updateRadioButtons(session, "saveSheet", choices = c(intersect(excel_sheets(input$uploadFile$datapath), c("3D Printer", "Laser Cutter", "3D Scanner", "Vinyl Cutter","CNC Router", "Sewing Machine", "Soldering and Desoldering Stati", "Hand and Power Tools", "Student", "Applicant", "No Affil", "No citizenship"))))
+    upload_path <- NULL
+    if (!is.null(input$uploadFile) && !is.null(input$uploadFile$datapath)) {
+      upload_path <- input$uploadFile$datapath
     }
+
+    sheet_choices <- get_save_sheet_choices(input$saveType, upload_path)
+    updateRadioButtons(session, "saveSheet", choices = sheet_choices)
   })
   
   data <- reactive({
@@ -313,6 +318,7 @@ server <- function(input, output, session) {
   observeEvent(input$save, {
     req(input$uploadFile, input$saveType, input$saveYear)
     uploadPath <- basename(saveName())
+    output_path <- NULL
     
     # create subdirectory by year if it doesn't exist
     if (!file.exists(file.path(data_dir,input$saveYear))) {
@@ -336,13 +342,6 @@ server <- function(input, output, session) {
       checkDir2 <- file.path(backup_dir, input$saveYear)
     }
     
-    if (!is_empty(checkDir)){
-      file.copy(checkDir, checkDir2, recursive = TRUE)
-      
-      #remove previous data from data directories
-      file.remove(checkDir)
-    }  
-    
     withProgress(message = "Save uploaded files to server", style = "notification", value = 0.1, {
       # save uploaded files to data and backup data directories
       if (file_ext(uploadPath) == "csv") {
@@ -350,7 +349,8 @@ server <- function(input, output, session) {
         Sys.sleep(.1)
         
         # Save .csv data files
-        write.csv(data(), file = file.path(data_dir, input$saveYear, saveName()), row.names = FALSE, quote = TRUE)
+        output_path <- file.path(data_dir, input$saveYear, saveName())
+        write.csv(data(), file = output_path, row.names = FALSE, quote = TRUE)
         
       } else if (file_ext(uploadPath) == "xlsx") {
         incProgress(.4)
@@ -359,7 +359,8 @@ server <- function(input, output, session) {
         if (input$saveType == "tags-selection") {
           
           # Save tag files
-          write.xlsx2(data(), file=file.path(data_dir, "tags", saveName()), sheetName = "Tags", row.names = FALSE)
+          output_path <- file.path(data_dir, "tags", saveName())
+          write.xlsx2(data(), file = output_path, sheetName = "Tags", row.names = FALSE)
           
         } else if (input$saveType == "From Rachel - ") { 
           # FOR SSO  
@@ -383,12 +384,14 @@ server <- function(input, output, session) {
           }
           
           # Save .xlsx data files
-          saveWorkbook(wb, file.path(data_dir, input$saveYear, saveName()))
+          output_path <- file.path(data_dir, input$saveYear, saveName())
+          saveWorkbook(wb, output_path)
           
         } else if (input$saveType == "Original - ") {
           # FOR CRM
           # Save .xlsx data files
-          write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "contacts", row.names = FALSE)
+          output_path <- file.path(data_dir, input$saveYear, saveName())
+          write.xlsx2(data(), file = output_path, sheetName = "contacts", row.names = FALSE)
           
         } else if (input$saveType == "Members and Training ") {
           # FOR TRAINING
@@ -409,13 +412,26 @@ server <- function(input, output, session) {
           }
           
           # Save .xlsx data files
-          saveWorkbook(wb, file.path(data_dir, "training", saveName()))
+          output_path <- file.path(data_dir, "training", saveName())
+          saveWorkbook(wb, output_path)
           
         } else if (input$saveType %in%  c("C&M Space Sign In ", "Innovation Hub Sign In ")) {
           # FOR SIGNINS
-          write.xlsx2(data(), file=file.path(data_dir, input$saveYear, saveName()), sheetName = "Form Responses 1", row.names = FALSE)
+          output_path <- file.path(data_dir, input$saveYear, saveName())
+          write.xlsx2(data(), file = output_path, sheetName = "Form Responses 1", row.names = FALSE)
         }
       }
+
+      if (!is_empty(checkDir)) {
+        backup_pattern <- paste0("^", escape_regex(input$saveType))
+        for (existing_file in checkDir) {
+          if (!same_file_contents(existing_file, output_path)) {
+            backup_file_if_unique(existing_file, checkDir2, pattern = backup_pattern)
+          }
+          file.remove(existing_file)
+        }
+      }
+
       incProgress(.4)
       Sys.sleep(.1)
       

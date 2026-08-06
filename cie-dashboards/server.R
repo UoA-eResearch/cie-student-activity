@@ -17,6 +17,16 @@ library(plotly)
 library(shinyWidgets)
 library(networkD3)
 
+filter_data <- function(dashboard, data_df, selection_df) {
+  col_num <- match(dashboard, colnames(selection_df))
+  selected_programmes <- selection_df %>%
+    filter(selection_df[, col_num] == "Y") %>%
+    pull(tag_programme)
+
+  data_df %>%
+    filter(programme %in% selected_programmes)
+}
+
 filtermap = list(
   "Gender" = "Sex",
   "Ethnic Group" = "Ethnic.Group",
@@ -28,18 +38,6 @@ filtermap = list(
   "Residency" = "Residency.Status",
   "Year" = "year"
 )
-
-# Functions
-filter_data <- function(dashboard, data_df, selection_df) {
-  # Filter programmes based on tab names
-  colNum <- match(dashboard, colnames(selection_df))
-  df1 <- selection_df %>% 
-    filter(selection_df[,colNum] == "Y") %>% 
-    select(tag_programme)
-  df2 <- data_df %>% 
-    filter(programme %in% df1$tag_programme)
-  return(df2)
-}
 
 post_changes = function(df) {
   if(!(filtermap$Faculty %in% colnames(df))) {
@@ -65,32 +63,50 @@ post_changes = function(df) {
 allData <- read_csv("../data/all.csv", col_types = cols(ID = col_character()))
 selection <- read_csv("../data/tags/tags_selection.csv")
 selection$date <- as.Date(ifelse(is.na(selection$date), paste0(as.character(selection$year), "-01-01"), as.character(selection$date)))
-overview_df <- filter_data("overview", allData, selection)
-programme_df <- filter_data("programme", allData, selection)
-velocity_df <- filter_data("velocity", allData, selection)
-unleash_df <- filter_data("unleash", allData, selection)
-createmaker_df <- filter_data("createmaker", allData, selection)
-journey_df <- filter_data("journey", allData, selection)
 all_training <- read_csv("../data/all_training.csv", col_types = cols(ID = col_character())) %>% filter(!is.na(date)) %>% distinct()
 all_studio <- read_csv("../data/all_studio.csv", col_types = cols(ID = col_character(), year = col_character())) %>% filter(!is.na(timestamp)) %>% distinct()
 colnames(all_training) <- c("ID", "date", "programme")
 
-overview_df = post_changes(overview_df)
+filtered_dashboard_cache <- local({
+  cache <- new.env(parent = emptyenv())
 
-curricula_programmes = sort(unique(selection$tag_programme[selection$curricula == "Y"]))
-if ("co-curricula" %in% colnames(selection)) {
-  cocurricula_programmes = sort(unique(selection$tag_programme[selection$`co-curricula` == "Y"]))
-  curricula_df = allData %>% mutate(
-    programme = case_when(
-      programme %in% curricula_programmes ~ "Curricula",
-      programme %in% cocurricula_programmes ~ "Co-curricula"
-    )
-  ) %>% filter(!is.na(programme))
-} else {
-  curricula_df = programme_df %>% mutate(
-    programme = ifelse(programme %in% curricula_programmes, "Curricula", "Co-curricula")
-  )
-}
+  function(name) {
+    if (!exists(name, envir = cache, inherits = FALSE)) {
+      value <- switch(
+        name,
+        overview = post_changes(filter_data("overview", allData, selection)),
+        programme = post_changes(filter_data("programme", allData, selection)),
+        velocity = post_changes(filter_data("velocity", allData, selection)),
+        unleash = post_changes(filter_data("unleash", allData, selection)),
+        createmaker = post_changes(filter_data("createmaker", allData, selection)),
+        journey = post_changes(filter_data("journey", allData, selection)),
+        curricula = {
+          curricula_programmes <- sort(unique(selection$tag_programme[selection$curricula == "Y"]))
+          if ("co-curricula" %in% colnames(selection)) {
+            cocurricula_programmes <- sort(unique(selection$tag_programme[selection$`co-curricula` == "Y"]))
+            allData %>%
+              mutate(
+                programme = case_when(
+                  programme %in% curricula_programmes ~ "Curricula",
+                  programme %in% cocurricula_programmes ~ "Co-curricula"
+                )
+              ) %>%
+              filter(!is.na(programme)) %>%
+              post_changes()
+          } else {
+            filter_data("programme", allData, selection) %>%
+              mutate(programme = ifelse(programme %in% curricula_programmes, "Curricula", "Co-curricula")) %>%
+              post_changes()
+          }
+        },
+        stop("Unknown dashboard cache key: ", name)
+      )
+      assign(name, value, envir = cache)
+    }
+
+    get(name, envir = cache, inherits = FALSE)
+  }
+})
 
 
 # Define server logic required to draw a histogram
@@ -98,19 +114,19 @@ server <- function(input, output, session) {
   # Reactivate dataframes
   filterData <- reactive({
     if (input$tab == "overview") {
-      return(post_changes(overview_df))
+      return(filtered_dashboard_cache("overview"))
     } else if (input$tab == "programme") {
-      return(post_changes(programme_df))
+      return(filtered_dashboard_cache("programme"))
     } else if (input$tab == "velocity") {
-      return(post_changes(velocity_df))
+      return(filtered_dashboard_cache("velocity"))
     } else if (input$tab == "unleash") {
-      return(post_changes(unleash_df))
+      return(filtered_dashboard_cache("unleash"))
     } else if (input$tab =="journey") {
-      return(post_changes(journey_df))
+      return(filtered_dashboard_cache("journey"))
     } else if (input$tab == "createmaker") {
-      return(post_changes(createmaker_df))
+      return(filtered_dashboard_cache("createmaker"))
     } else if (input$tab == "curricula") {
-      return(post_changes(curricula_df))
+      return(filtered_dashboard_cache("curricula"))
     }
   })
   
@@ -162,7 +178,7 @@ server <- function(input, output, session) {
       updatePickerInput(session, "baseProgramme", selected = "CIE Participant", choices = sort(unique(filterData()$programme)))
       
     } else if (input$tab == "curricula") {
-      curricula_options = sort(unique(curricula_df$programme))
+      curricula_options = sort(unique(filtered_dashboard_cache("curricula")$programme))
       updatePickerInput(session, "baseProgramme", selected = curricula_options, choices = curricula_options)
     }
   })

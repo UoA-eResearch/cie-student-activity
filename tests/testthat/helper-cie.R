@@ -1,0 +1,95 @@
+local_edition(3)
+
+ensure_browser <- function() {
+  candidates <- unique(c(
+    Sys.getenv("CHROMOTE_CHROME", unset = ""),
+    "/usr/local/bin/chrome",
+    "/opt/chrome/chrome"
+  ))
+  browser <- candidates[nzchar(candidates) & file.exists(candidates)][1]
+
+  skip_if(is.na(browser) || !nzchar(browser), "Chrome binary not available for shinytest2")
+  Sys.setenv(CHROMOTE_CHROME = browser)
+  invisible(browser)
+}
+
+repo_path <- function(...) {
+  testthat::test_path("..", "..", ...)
+}
+
+new_dashboard_app <- function() {
+  ensure_browser()
+  shinytest2::AppDriver$new(
+    app_dir = repo_path("cie-dashboards"),
+    name = "dashboard",
+    load_timeout = 60000,
+    timeout = 30000,
+    height = 1400,
+    width = 1600
+  )
+}
+
+new_upload_app <- function(env = character()) {
+  ensure_browser()
+  withr::with_envvar(
+    env,
+    shinytest2::AppDriver$new(
+      app_dir = repo_path("cie-uploads"),
+      name = "uploads",
+      load_timeout = 60000,
+      timeout = 30000,
+      height = 1400,
+      width = 1600
+    )
+  )
+}
+
+copy_tree <- function(from, to) {
+  fs::dir_create(to)
+  for (entry in list.files(from, all.files = TRUE, no.. = TRUE, full.names = TRUE)) {
+    target <- file.path(to, basename(entry))
+    if (dir.exists(entry)) {
+      fs::dir_copy(entry, target)
+    } else {
+      file.copy(entry, target, overwrite = TRUE, recursive = FALSE, copy.mode = TRUE)
+    }
+  }
+}
+
+make_upload_sandbox <- function() {
+  root <- file.path(tempdir(), paste0("cie-upload-test-", as.integer(Sys.time()), "-", sample.int(100000, 1)))
+  data_dir <- file.path(root, "data")
+  backup_dir <- file.path(root, "backup_data")
+
+  copy_tree(repo_path("data"), data_dir)
+  copy_tree(repo_path("backup_data"), backup_dir)
+
+  list(root = root, data_dir = data_dir, backup_dir = backup_dir)
+}
+
+fetch_url_body <- function(url, retries = 15, delay_sec = 1) {
+  for (i in seq_len(retries)) {
+    out <- tryCatch({
+      con <- base::url(url, open = "rb")
+      on.exit(close(con), add = TRUE)
+      raw <- readBin(con, what = "raw", n = 5 * 1024 * 1024)
+      rawToChar(raw)
+    }, error = function(e) "")
+
+    if (nzchar(out)) {
+      return(out)
+    }
+
+    Sys.sleep(delay_sec)
+  }
+
+  stop(sprintf("Failed to fetch %s", url), call. = FALSE)
+}
+
+radio_choices <- function(app, id) {
+  js <- sprintf(
+    "Array.from(document.querySelectorAll('#%s .radio label')).map((el) => el.textContent.trim()).filter((x) => x.length > 0);",
+    id
+  )
+  unlist(app$get_js(js), use.names = FALSE)
+}

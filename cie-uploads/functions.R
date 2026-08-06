@@ -31,6 +31,156 @@ facultyRename <- tibble(
   )
 )
 
+escape_regex <- function(value) {
+  gsub("([][{}()+*^$|\\?.])", "\\\\1", value)
+}
+
+ensure_directory <- function(path) {
+  if (!dir.exists(path)) {
+    dir.create(path, recursive = TRUE, showWarnings = FALSE)
+  }
+}
+
+same_file_contents <- function(path_a, path_b) {
+  if (!file.exists(path_a) || !file.exists(path_b)) {
+    return(FALSE)
+  }
+
+  info_a <- file.info(path_a)
+  info_b <- file.info(path_b)
+
+  if (is.na(info_a$size) || is.na(info_b$size) || info_a$size != info_b$size) {
+    return(FALSE)
+  }
+
+  identical(
+    digest::digest(file = path_a, algo = "xxhash64"),
+    digest::digest(file = path_b, algo = "xxhash64")
+  )
+}
+
+backup_file_if_unique <- function(source_path, backup_dir, pattern = NULL) {
+  if (!file.exists(source_path)) {
+    return(FALSE)
+  }
+
+  ensure_directory(backup_dir)
+
+  candidates <- if (is.null(pattern)) {
+    dir(backup_dir, full.names = TRUE)
+  } else {
+    dir(backup_dir, pattern = pattern, full.names = TRUE)
+  }
+  candidates <- candidates[!dir.exists(candidates)]
+
+  if (length(candidates) > 0 && any(vapply(candidates, function(candidate) same_file_contents(source_path, candidate), logical(1)))) {
+    return(FALSE)
+  }
+
+  file.copy(source_path, backup_dir, overwrite = FALSE)
+}
+
+store_versioned_backup_if_unique <- function(source_path, backup_dir, name_prefix) {
+  if (!file.exists(source_path)) {
+    return(FALSE)
+  }
+
+  ensure_directory(backup_dir)
+
+  file_extension <- tools::file_ext(source_path)
+  extension_suffix <- if (nzchar(file_extension)) paste0(".", file_extension) else ""
+  pattern <- paste0("^", escape_regex(name_prefix), "-.*", escape_regex(extension_suffix), "$")
+  candidates <- dir(backup_dir, pattern = pattern, full.names = TRUE)
+  candidates <- candidates[!dir.exists(candidates)]
+
+  if (length(candidates) > 0 && any(vapply(candidates, function(candidate) same_file_contents(source_path, candidate), logical(1)))) {
+    return(FALSE)
+  }
+
+  timestamp <- format(Sys.time(), "%Y-%m-%dT%H-%M-%S")
+  target_path <- file.path(backup_dir, paste0(name_prefix, "-", timestamp, extension_suffix))
+  counter <- 1
+  while (file.exists(target_path)) {
+    target_path <- file.path(backup_dir, paste0(name_prefix, "-", timestamp, "-", counter, extension_suffix))
+    counter <- counter + 1
+  }
+
+  file.copy(source_path, target_path, overwrite = FALSE)
+}
+
+update_csv_with_backups <- function(data_frame, output_path, mirror_backup_path = NULL, versioned_backup_dir = NULL, versioned_backup_prefix = NULL) {
+  ensure_directory(dirname(output_path))
+
+  temp_path <- tempfile(fileext = ".csv")
+  on.exit(unlink(temp_path), add = TRUE)
+  write_csv(data_frame, temp_path)
+
+  changed <- !file.exists(output_path) || !same_file_contents(output_path, temp_path)
+  if (!changed) {
+    return(FALSE)
+  }
+
+  if (!is.null(mirror_backup_path) && file.exists(output_path)) {
+    ensure_directory(dirname(mirror_backup_path))
+    if (!file.exists(mirror_backup_path) || !same_file_contents(output_path, mirror_backup_path)) {
+      file.copy(output_path, mirror_backup_path, overwrite = TRUE)
+    }
+  }
+
+  if (!is.null(versioned_backup_dir) && !is.null(versioned_backup_prefix)) {
+    store_versioned_backup_if_unique(temp_path, versioned_backup_dir, versioned_backup_prefix)
+  }
+
+  file.copy(temp_path, output_path, overwrite = TRUE)
+  TRUE
+}
+
+deduplicate_directory_files <- function(dir_path) {
+  files <- dir(dir_path, full.names = TRUE, recursive = FALSE)
+  files <- files[!dir.exists(files)]
+
+  if (length(files) < 2) {
+    return(character())
+  }
+
+  info <- file.info(files)
+  size_groups <- split(files, info$size)
+  removed <- character()
+
+  for (group_files in size_groups) {
+    if (length(group_files) < 2) {
+      next
+    }
+
+    hashes <- vapply(group_files, function(path) digest::digest(file = path, algo = "xxhash64"), character(1))
+    hash_groups <- split(group_files, hashes)
+
+    for (duplicate_group in hash_groups) {
+      if (length(duplicate_group) < 2) {
+        next
+      }
+
+      group_info <- file.info(duplicate_group)
+      keep_index <- order(group_info$mtime, basename(duplicate_group), na.last = TRUE)[1]
+      removed <- c(removed, duplicate_group[-keep_index])
+    }
+  }
+
+  removed <- unique(removed)
+  if (length(removed) > 0) {
+    file.remove(removed)
+  }
+
+  removed
+}
+
+deduplicate_backup_dir <- function(backup_dir) {
+  directories <- c(backup_dir, dir(backup_dir, full.names = TRUE, recursive = TRUE))
+  directories <- directories[dir.exists(directories)]
+
+  unlist(lapply(directories, deduplicate_directory_files), use.names = FALSE)
+}
+
 ## Functions
 # Process all data files and write to "all.csv"
 process_write <- function(data_dir, backup_dir) {
@@ -100,27 +250,31 @@ process_write <- function(data_dir, backup_dir) {
     })
     incProgress(.1)
     
-    # Copy old all.csv to backup_dir
-    withProgress(message = "Backingup data", style=style, value =.5, {
-      allName <- dir(data_dir, pattern = "all.*csv", full.names = TRUE)
-      incProgress(.2)
-      Sys.sleep(0.2)
-      file.copy(allName, backup_dir, overwrite = TRUE)
-      incProgress(.2)
-      Sys.sleep(0.2)
-    })
-    incProgress(.1)
-    
     # Export
     withProgress(message = "Uploading data", style=style, value =.5, {
-      write_csv(all_df, file.path(data_dir,"all.csv"))
+      update_csv_with_backups(
+        all_df,
+        file.path(data_dir, "all.csv"),
+        mirror_backup_path = file.path(backup_dir, "all.csv"),
+        versioned_backup_dir = file.path(backup_dir, "all"),
+        versioned_backup_prefix = "all"
+      )
       incProgress(.1)
-      write_csv(all_training, file.path(data_dir,"all_training.csv"))
-      write_csv(all_studio, file.path(data_dir,"all_studio.csv"))
+      update_csv_with_backups(
+        all_training,
+        file.path(data_dir, "all_training.csv"),
+        mirror_backup_path = file.path(backup_dir, "all_training.csv"),
+        versioned_backup_dir = file.path(backup_dir, "all"),
+        versioned_backup_prefix = "all_training"
+      )
+      update_csv_with_backups(
+        all_studio,
+        file.path(data_dir, "all_studio.csv"),
+        mirror_backup_path = file.path(backup_dir, "all_studio.csv"),
+        versioned_backup_dir = file.path(backup_dir, "all"),
+        versioned_backup_prefix = "all_studio"
+      )
       incProgress(.1)
-      write_csv(all_df, file.path(backup_dir, "all", paste0("all-",Sys.time(),".csv")))
-      write_csv(all_training, file.path(backup_dir, "all", paste0("all_training-",Sys.time(),".csv")))
-      write_csv(all_studio, file.path(backup_dir, "all", paste0("all_studio-",Sys.time(),".csv")))
       incProgress(.1)
       # Remove cache on the server
       system("touch ../cie-dashboards/*.R")
@@ -386,14 +540,13 @@ load_tag <- function(data_dir, backup_dir, save = FALSE) {
   selection$date <- as.Date(as.numeric(selection$date)+5, origin = "1904-01-01")
   
   if (save) {
-    # Back up current tags_selection.csv file
-    checkDir <- dir(file.path(data_dir, "tags"), pattern = paste0("tags_selection", ".*csv"), full.names = TRUE)
-    checkDir2 <- file.path(backup_dir, "tags")
-    file.copy(checkDir, checkDir2, recursive = TRUE)
-    
-    # Export
-    write_csv(selection, file.path(data_dir,"tags", "tags_selection.csv"))
-    write_csv(selection, file.path(backup_dir, "tags", paste0("tags_selection-",Sys.time(),".csv"))) # Another copy for backup
+    update_csv_with_backups(
+      selection,
+      file.path(data_dir, "tags", "tags_selection.csv"),
+      mirror_backup_path = file.path(backup_dir, "tags", "tags_selection.csv"),
+      versioned_backup_dir = file.path(backup_dir, "tags"),
+      versioned_backup_prefix = "tags_selection"
+    )
   }  
   
   return(selection)

@@ -8,6 +8,7 @@ services:
     ports:
       - "3838:3838"
     volumes:
+      - ./shiny-server.conf:/etc/shiny-server/shiny-server.conf:ro
       - ${DATA_DIR:-./data}:/srv/shiny-server/data
       - ${BACKUP_DIR:-./backup_data}:/srv/shiny-server/backup_data
     group_add:
