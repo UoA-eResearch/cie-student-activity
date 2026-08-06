@@ -49,10 +49,14 @@ DATA_DIR=$(readlink -f data)
 BACKUP_DIR=$(readlink -f backup_data)
 
 docker run -d --name shiny -p 3838:3838 \
+	--group-add 100 \
+	--group-add 998 \
 	-v "$DATA_DIR":/srv/shiny-server/data \
 	-v "$BACKUP_DIR":/srv/shiny-server/backup_data \
 	shiny
 ```
+
+The extra groups above allow the `shiny` runtime user to write into existing year folders (for example `2026`) and backup folders with host group ownership.
 
 Stop/remove:
 
@@ -75,6 +79,8 @@ Start:
 ```bash
 DATA_DIR=$(readlink -f data) \
 BACKUP_DIR=$(readlink -f backup_data) \
+DATA_GID=100 \
+BACKUP_GID=998 \
 $COMPOSE_CMD up -d --build
 ```
 

@@ -10,4 +10,7 @@ services:
     volumes:
       - ${DATA_DIR:-./data}:/srv/shiny-server/data
       - ${BACKUP_DIR:-./backup_data}:/srv/shiny-server/backup_data
+    group_add:
+      - "${DATA_GID:-100}"
+      - "${BACKUP_GID:-998}"
     restart: unless-stopped
