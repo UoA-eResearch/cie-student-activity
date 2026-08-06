@@ -3,7 +3,7 @@ set -euo pipefail
 
 COMPOSE_CMD=${COMPOSE_CMD:-"docker compose"}
 BASE_URL=${BASE_URL:-"http://127.0.0.1:3838"}
-REBUILD=${REBUILD:-1}
+REBUILD=${REBUILD:-"0"}
 
 echo "[1/3] Ensuring shiny container is up"
 if [[ "$REBUILD" == "1" ]]; then

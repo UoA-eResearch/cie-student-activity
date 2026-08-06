@@ -58,6 +58,7 @@ COPY renv.lock ./renv.lock
 ENV RENV_PATHS_LIBRARY_ROOT=/usr/local/lib/R/renv
 ENV RENV_PATHS_CACHE=/root/.cache/R/renv
 ENV RENV_CONFIG_AUTOLOADER_ENABLED=FALSE
+ENV SHINY_LOG_STDERR=1
 
 # Prefer precompiled Linux binaries where available (jammy) to avoid compiling from source.
 # Falls back to source if a binary is unavailable for a package/version.

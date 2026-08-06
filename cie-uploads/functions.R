@@ -40,6 +40,11 @@ ensure_directory <- function(path) {
   }
 }
 
+read_xlsx_character <- function(path, sheet, startRow) {
+  df <- openxlsx::read.xlsx(path, sheet = sheet, startRow = startRow, detectDates = FALSE, check.names = FALSE)
+  as.data.frame(lapply(df, as.character), check.names = FALSE, stringsAsFactors = FALSE)
+}
+
 persist_uploaded_file <- function(source_path, data_dir, year, file_name) {
   upload_dir <- file.path(data_dir, "uploads", year)
   ensure_directory(upload_dir)
@@ -310,28 +315,38 @@ load_sso <- function(data_dir) {
   c["Birthdate"] <- "integer"
   # Read and clean sheet
   student <- tibble(updated = basename(dirname(files[1])), filename = files[1]) %>% 
-    mutate(file_contents = map(filename, ~openxlsx::read.xlsx(file.path(.), sheet = "Student", startRow = 2, detectDates = FALSE, check.names = FALSE))) %>% 
+    mutate(file_contents = map(filename, ~read_xlsx_character(file.path(.), sheet = "Student", startRow = 2))) %>% 
     select(-filename) %>% 
     unnest() %>% 
     group_by(ID) %>%
     filter(as.numeric(`Admit.Term`)==max(as.numeric(as.character(`Admit.Term`)))) %>% # Only select most recent updates
     ungroup() %>%
     distinct() # Remove duplicates
-  student$Owner.of.Major.Spec.Module <- facultyRename$newFaculty[match(student$Owner.of.Major.Spec.Module, facultyRename$oldFaculty)]
+  student[] <- lapply(student, as.character)
+  if ("Owner.of.Major/Spec/Module" %in% names(student) && !"Owner.of.Major.Spec.Module" %in% names(student)) {
+    names(student)[names(student) == "Owner.of.Major/Spec/Module"] <- "Owner.of.Major.Spec.Module"
+  }
+  if ("Owner.of.Major.Spec.Module" %in% names(student)) {
+    student$Owner.of.Major.Spec.Module <- facultyRename$newFaculty[match(student$Owner.of.Major.Spec.Module, facultyRename$oldFaculty)]
+  }
   isStudent <- files[-1]
   colNames <- colnames(student)
   colNames  <- colNames[-4]
   for (file in isStudent) {
     studentMock <- tibble(updated = basename(dirname(file)), filename = file) %>% 
-      mutate(file_contents = map(filename, ~openxlsx::read.xlsx(file.path(.), sheet = "Student", startRow = 2, detectDates = FALSE, check.names = FALSE))) %>% 
+      mutate(file_contents = map(filename, ~read_xlsx_character(file.path(.), sheet = "Student", startRow = 2))) %>% 
       select(-filename) %>% 
       unnest() %>% 
       group_by(ID) %>%
       filter(as.numeric(`Admit.Term`)==max(as.numeric(as.character(`Admit.Term`)))) %>% # Only select most recent updates
       ungroup() %>%
       distinct() 
+    studentMock[] <- lapply(studentMock, as.character)
+    if ("Owner.of.Major/Spec/Module" %in% names(studentMock) && !"Owner.of.Major.Spec.Module" %in% names(studentMock)) {
+      names(studentMock)[names(studentMock) == "Owner.of.Major/Spec/Module"] <- "Owner.of.Major.Spec.Module"
+    }
     student <- student %>% 
-      rbind(studentMock)
+      bind_rows(studentMock)
     student <- student[!duplicated(student[,colNames]),] # Remove duplicates
     student$Residency.Status[!student$Residency.Status %in% c("International", "New Zealand Citizen", "NZ Permanent Resident")] <- "International" # Change everything should be International to International
   }
@@ -339,11 +354,20 @@ load_sso <- function(data_dir) {
   student <- student %>% 
     select(-`Birthdate`)
   # Change values for "Alumni"
-  student[which(student$Status == "Completed Programme"),][c('Programme.Level', 'Descriptio', 'Owner.of.Major.Spec.Module')] <- "ALUMNI"
+  if (all(c("Status", "Programme.Level", "Descriptio", "Owner.of.Major.Spec.Module") %in% names(student))) {
+    alumni_rows <- which(student$Status == "Completed Programme")
+  } else {
+    alumni_rows <- integer(0)
+  }
+  if (length(alumni_rows) > 0) {
+    student[alumni_rows, c('Programme.Level', 'Descriptio', 'Owner.of.Major.Spec.Module')] <- "ALUMNI"
+  }
   # Consistent sex
-  student$Sex[student$Sex == "F"] <- "Female"
-  student$Sex[student$Sex == "M"] <- "Male"
-  student$Sex[student$Sex == "D"] <- "Diverse"
+  if ("Sex" %in% names(student)) {
+    student$Sex[student$Sex == "F"] <- "Female"
+    student$Sex[student$Sex == "M"] <- "Male"
+    student$Sex[student$Sex == "D"] <- "Diverse"
+  }
   
   ## Applicant sheet
   # Get excel workbooks that have "Applicant" sheet
@@ -351,7 +375,7 @@ load_sso <- function(data_dir) {
   isAppl <- files[which(unlist(isAppl))]
   # Read excel
   applicant <- tibble(updated = basename(dirname(isAppl)), filename = isAppl) %>% 
-    mutate(file_contents = map(filename, ~openxlsx::read.xlsx(file.path(.), sheet = "Applicant", startRow = 2, detectDates = FALSE, check.names = FALSE))) %>% 
+    mutate(file_contents = map(filename, ~read_xlsx_character(file.path(.), sheet = "Applicant", startRow = 2))) %>% 
     select(-filename) %>% 
     unnest() %>% 
     select(updated, ID, Sex, Age, `Residency.Status`, `Ethnic.Group`, `Ethnicity`, Iwi, Descr, NSN, Descr.1)
@@ -367,7 +391,7 @@ load_sso <- function(data_dir) {
   isAffil <- files[which(unlist(isAffil))]
   # Read excel
   affil <- tibble(updated = basename(dirname(isAffil)), filename = isAffil) %>% 
-    mutate(file_contents = map(filename, ~openxlsx::read.xlsx(file.path(.), sheet = "No Affil", startRow = 2, detectDates = FALSE, check.names = FALSE))) %>% 
+    mutate(file_contents = map(filename, ~read_xlsx_character(file.path(.), sheet = "No Affil", startRow = 2))) %>% 
     select(-filename) %>% 
     unnest() %>% 
     select(updated, ID, Sex, NSN, `Ethnic.grp.description`, `Citizenship.Passport`, `Descr`)
@@ -389,7 +413,7 @@ load_sso <- function(data_dir) {
   isCitizenship <- files[which(unlist(isCitizenship))]
   # Read excel
   citizenship <- tibble(updated = basename(dirname(isCitizenship)), filename = isCitizenship) %>% 
-    mutate(file_contents = map(filename, ~openxlsx::read.xlsx(file.path(.), sheet = "No citizenship", startRow = 2, detectDates = FALSE, check.names = FALSE))) %>% 
+    mutate(file_contents = map(filename, ~read_xlsx_character(file.path(.), sheet = "No citizenship", startRow = 2))) %>% 
     select(-filename) %>% 
     unnest() %>% 
     select(-`Display.Name`, -`Birthdate`)
@@ -403,9 +427,9 @@ load_sso <- function(data_dir) {
   
   
   # Merge all sheets data
-  all <- rbind(student, applicant)
-  all <- rbind(all, affil)
-  all <- rbind(all, citizenship)
+  all <- bind_rows(student, applicant)
+  all <- bind_rows(all, affil)
+  all <- bind_rows(all, citizenship)
   #all <- do.call("rbind", list(student, affil, applicant))
   
   return(all)
@@ -605,7 +629,10 @@ join_table <- function(selected_partProg, partInfo) {
   ## Change all NAs to EXTERNAL for EXTERNALs
   colsToChange <- colnames(df_stud)
   colsToChange <- colsToChange[!colsToChange%in%c("ID","updated","year", "programme")]
-  df_stud[grepl("EXTERNAL",df_stud$ID),][colsToChange] <- "EXTERNAL"
+  external_rows <- grepl("EXTERNAL", df_stud$ID)
+  if (any(external_rows)) {
+    df_stud[external_rows, colsToChange] <- "EXTERNAL"
+  }
   
   return(df_stud)
 }
