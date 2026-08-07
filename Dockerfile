@@ -69,7 +69,8 @@ ENV CHROMOTE_CHROME=/usr/local/bin/chrome
 RUN --mount=type=cache,target=/root/.cache/R/renv,sharing=locked \
     R -q -e "install.packages('renv', repos = 'https://cloud.r-project.org')" \
     && R -q -e "renv::consent(TRUE); renv::restore(project = '/srv/shiny-server', lockfile = '/srv/shiny-server/renv.lock', prompt = FALSE)" \
-    && R -q -e "install.packages('openxlsx', repos = 'https://cloud.r-project.org')"
+    && R -q -e "install.packages('openxlsx', repos = 'https://cloud.r-project.org')" \
+    && R -q -e "install.packages(c('testthat', 'shinytest2'), repos = Sys.getenv('RENV_CONFIG_REPOS_OVERRIDE'))"
 
 # Copy the rest of the application source.
 COPY . ./

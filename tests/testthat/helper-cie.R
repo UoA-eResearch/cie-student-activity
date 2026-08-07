@@ -44,25 +44,26 @@ new_upload_app <- function(env = character()) {
   )
 }
 
-copy_tree <- function(from, to) {
-  fs::dir_create(to)
-  for (entry in list.files(from, all.files = TRUE, no.. = TRUE, full.names = TRUE)) {
-    target <- file.path(to, basename(entry))
-    if (dir.exists(entry)) {
-      fs::dir_copy(entry, target)
-    } else {
-      file.copy(entry, target, overwrite = TRUE, recursive = FALSE, copy.mode = TRUE)
-    }
-  }
-}
-
+# Copy only the source spreadsheets the upload app reads, not the whole data tree.
+# Copying everything filled the disk: all.csv is 150MB+ and backup_data holds every
+# historical version of it (tens of GB). The generated files this omits — all.csv,
+# all_training.csv, all_studio.csv and the backup versions — are what process_write()
+# produces, so the tests assert they get created rather than needing them up front.
 make_upload_sandbox <- function() {
   root <- file.path(tempdir(), paste0("cie-upload-test-", as.integer(Sys.time()), "-", sample.int(100000, 1)))
   data_dir <- file.path(root, "data")
   backup_dir <- file.path(root, "backup_data")
 
-  copy_tree(repo_path("data"), data_dir)
-  copy_tree(repo_path("backup_data"), backup_dir)
+  fs::dir_create(c(data_dir, backup_dir))
+
+  source_data <- repo_path("data")
+  year_dirs <- list.files(source_data, pattern = "^[0-9]{4}$")
+  for (entry in c(year_dirs, "base", "tags", "training")) {
+    from <- file.path(source_data, entry)
+    if (dir.exists(from)) {
+      fs::dir_copy(from, file.path(data_dir, entry))
+    }
+  }
 
   list(root = root, data_dir = data_dir, backup_dir = backup_dir)
 }

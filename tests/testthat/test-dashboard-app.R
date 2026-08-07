@@ -19,11 +19,16 @@ test_that("dashboard specialised tabs render representative outputs", {
   app$set_inputs(tab = "velocity")
   expect_false(is.null(app$wait_for_value(output = "velocityUniquePlot", timeout = 60000)))
 
+  # Assert on outputs the tab shows by default. The studio plots below these sit inside
+  # a conditionalPanel keyed on baseProgramme == "<...> Studio Participant", and no such
+  # programme exists in all.csv or tags_selection.csv, so those panels stay hidden and
+  # their outputs are never computed.
   app$set_inputs(tab = "unleash")
-  expect_false(is.null(app$wait_for_value(output = "unleashStudioTimeseriesPlot", timeout = 60000)))
+  expect_false(is.null(app$wait_for_value(output = "unleashUniquePlot", timeout = 60000)))
+  expect_false(is.null(app$wait_for_value(output = "unleashFacultyPlot", timeout = 60000)))
 
   app$set_inputs(tab = "createmaker")
-  expect_false(is.null(app$wait_for_value(output = "createmakerStudioEquipmentPlot", timeout = 60000)))
+  expect_false(is.null(app$wait_for_value(output = "createmakerUniquePlot", timeout = 60000)))
 
   app$set_inputs(tab = "curricula")
   expect_false(is.null(app$wait_for_value(output = "curriculaUniquePlot", timeout = 60000)))

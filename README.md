@@ -109,10 +109,12 @@ Run all tests inside the `shiny` container (recommended):
 
 ```bash
 chmod +x tests/run_in_container.sh tests/test_apps_http.sh
+REBUILD=1 ./tests/run_in_container.sh
+# REBUILD=1 rebuilds the image so the latest tests/app code is included. The suite
+# needs testthat and shinytest2, which the Dockerfile installs, so a stale image
+# fails with "there is no package called 'testthat'".
+# Without REBUILD, the existing image is reused (faster when only rerunning tests).
 ./tests/run_in_container.sh
-# By default this rebuilds the image so latest tests/app code are included.
-# Use REBUILD=0 to skip rebuild when you only want to rerun tests.
-# REBUILD=0 ./tests/run_in_container.sh
 ```
 
 This runs:
