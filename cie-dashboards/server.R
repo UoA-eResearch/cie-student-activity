@@ -17,15 +17,8 @@ library(plotly)
 library(shinyWidgets)
 library(networkD3)
 
-filter_data <- function(dashboard, data_df, selection_df) {
-  col_num <- match(dashboard, colnames(selection_df))
-  selected_programmes <- selection_df %>%
-    filter(selection_df[, col_num] == "Y") %>%
-    pull(tag_programme)
-
-  data_df %>%
-    filter(programme %in% selected_programmes)
-}
+# allData, selection, all_studio, all_training and filter_data() come from global.R,
+# which Shiny sources before this file
 
 filtermap = list(
   "Gender" = "Sex",
@@ -58,14 +51,6 @@ post_changes = function(df) {
   )
 }
 
-
-# Import data
-allData <- read_csv("../data/all.csv", col_types = cols(ID = col_character()))
-selection <- read_csv("../data/tags/tags_selection.csv")
-selection$date <- as.Date(ifelse(is.na(selection$date), paste0(as.character(selection$year), "-01-01"), as.character(selection$date)))
-all_training <- read_csv("../data/all_training.csv", col_types = cols(ID = col_character())) %>% filter(!is.na(date)) %>% distinct()
-all_studio <- read_csv("../data/all_studio.csv", col_types = cols(ID = col_character(), year = col_character())) %>% filter(!is.na(timestamp)) %>% distinct()
-colnames(all_training) <- c("ID", "date", "programme")
 
 filtered_dashboard_cache <- local({
   cache <- new.env(parent = emptyenv())

@@ -16,22 +16,8 @@ library(DT)
 library(shinyWidgets)
 library(networkD3)
 
-filter_data <- function(dashboard, data_df, selection_df) {
-  col_num <- match(dashboard, colnames(selection_df))
-  selected_programmes <- selection_df %>%
-    filter(selection_df[, col_num] == "Y") %>%
-    pull(tag_programme)
-
-  data_df %>%
-    filter(programme %in% selected_programmes)
-}
-
-# Import data
-allData <- read_csv("../data/all.csv", col_types = cols(ID = col_character()))
-selection <- read_csv("../data/tags/tags_selection.csv")
-allStudio <- read_csv("../data/all_studio.csv", col_types = cols(ID = col_character()))
-
-availProg <- filter_data("programme", allData, selection)
+# allData, selection, allStudio, availProg and filter_data() come from global.R,
+# which Shiny sources before this file
 
 filtermap = list(
   "Gender" = "Sex",
