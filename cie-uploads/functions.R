@@ -31,7 +31,9 @@ facultyRename <- tibble(
 )
 
 escape_regex <- function(value) {
-  gsub("([][{}()+*^$|\\?.])", "\\\\1", value)
+  # The replacement must be a literal backslash followed by the backreference ("\\\1"),
+  # otherwise the result is the invalid backreference "\1" rather than an escaped character.
+  gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", value)
 }
 
 ensure_directory <- function(path) {
@@ -93,6 +95,39 @@ backup_file_if_unique <- function(source_path, backup_dir, pattern = NULL) {
   file.copy(source_path, backup_dir, overwrite = FALSE)
 }
 
+# How many timestamped versions of each generated CSV to keep in the backup directory.
+# These files are derived: process_write() rebuilds them from the uploaded spreadsheets
+# under backup_data/<year>, which are never pruned. Without a limit they accumulate
+# indefinitely — one copy of all.csv per upload, at 150MB+ each.
+versioned_backup_limit <- as.integer(Sys.getenv("CIE_BACKUP_VERSIONS", unset = "5"))
+
+versioned_backup_files <- function(backup_dir, name_prefix, extension_suffix) {
+  # Anchored so that the "all" prefix does not also match all_training / all_studio
+  pattern <- paste0("^", escape_regex(name_prefix), "-.*", escape_regex(extension_suffix), "$")
+  candidates <- dir(backup_dir, pattern = pattern, full.names = TRUE)
+  candidates[!dir.exists(candidates)]
+}
+
+# Delete the oldest versions of `name_prefix`, keeping the `keep` most recent.
+prune_versioned_backups <- function(backup_dir, name_prefix, extension_suffix = ".csv", keep = versioned_backup_limit) {
+  if (is.na(keep) || keep < 1 || !dir.exists(backup_dir)) {
+    return(character())
+  }
+
+  candidates <- versioned_backup_files(backup_dir, name_prefix, extension_suffix)
+  if (length(candidates) <= keep) {
+    return(character())
+  }
+
+  # Newest first by modification time, falling back to name so ties are deterministic
+  info <- file.info(candidates)
+  ordered <- candidates[order(info$mtime, basename(candidates), decreasing = TRUE, method = "radix")]
+  stale <- ordered[-seq_len(keep)]
+
+  file.remove(stale)
+  stale
+}
+
 store_versioned_backup_if_unique <- function(source_path, backup_dir, name_prefix) {
   if (!file.exists(source_path)) {
     return(FALSE)
@@ -102,9 +137,7 @@ store_versioned_backup_if_unique <- function(source_path, backup_dir, name_prefi
 
   file_extension <- tools::file_ext(source_path)
   extension_suffix <- if (nzchar(file_extension)) paste0(".", file_extension) else ""
-  pattern <- paste0("^", escape_regex(name_prefix), "-.*", escape_regex(extension_suffix), "$")
-  candidates <- dir(backup_dir, pattern = pattern, full.names = TRUE)
-  candidates <- candidates[!dir.exists(candidates)]
+  candidates <- versioned_backup_files(backup_dir, name_prefix, extension_suffix)
 
   if (length(candidates) > 0 && any(vapply(candidates, function(candidate) same_file_contents(source_path, candidate), logical(1)))) {
     return(FALSE)
@@ -118,7 +151,10 @@ store_versioned_backup_if_unique <- function(source_path, backup_dir, name_prefi
     counter <- counter + 1
   }
 
-  file.copy(source_path, target_path, overwrite = FALSE)
+  stored <- file.copy(source_path, target_path, overwrite = FALSE)
+  prune_versioned_backups(backup_dir, name_prefix, extension_suffix)
+
+  stored
 }
 
 update_csv_with_backups <- function(data_frame, output_path, mirror_backup_path = NULL, versioned_backup_dir = NULL, versioned_backup_prefix = NULL) {
@@ -265,7 +301,7 @@ process_write <- function(data_dir, backup_dir) {
     
     # Export
     withProgress(message = "Uploading data", style=style, value =.5, {
-      update_csv_with_backups(
+      all_changed <- update_csv_with_backups(
         all_df,
         file.path(data_dir, "all.csv"),
         mirror_backup_path = file.path(backup_dir, "all.csv"),
@@ -273,14 +309,14 @@ process_write <- function(data_dir, backup_dir) {
         versioned_backup_prefix = "all"
       )
       incProgress(.1)
-      update_csv_with_backups(
+      training_changed <- update_csv_with_backups(
         all_training,
         file.path(data_dir, "all_training.csv"),
         mirror_backup_path = file.path(backup_dir, "all_training.csv"),
         versioned_backup_dir = file.path(backup_dir, "all"),
         versioned_backup_prefix = "all_training"
       )
-      update_csv_with_backups(
+      studio_changed <- update_csv_with_backups(
         all_studio,
         file.path(data_dir, "all_studio.csv"),
         mirror_backup_path = file.path(backup_dir, "all_studio.csv"),
@@ -289,8 +325,13 @@ process_write <- function(data_dir, backup_dir) {
       )
       incProgress(.1)
       incProgress(.1)
-      # Remove cache on the server
-      system("touch ../cie-dashboards/*.R")
+      # Remove cache on the server. Touching the dashboard sources makes Shiny discard
+      # its R process and reload the CSVs, which costs the next visitor a cold start,
+      # so only do it when this run actually produced different data.
+      tags_changed <- isTRUE(attr(selection, "tags_csv_changed"))
+      if (any(all_changed, training_changed, studio_changed, tags_changed)) {
+        system("touch ../cie-dashboards/*.R")
+      }
       incProgress(.1)
       Sys.sleep(0.2)
     })
@@ -572,14 +613,15 @@ load_tag <- function(data_dir, backup_dir, save = FALSE) {
   selection$date <- as.Date(as.numeric(selection$date)+5, origin = "1904-01-01")
   
   if (save) {
-    update_csv_with_backups(
+    # process_write() reads this back to decide whether the dashboards need reloading
+    attr(selection, "tags_csv_changed") <- update_csv_with_backups(
       selection,
       file.path(data_dir, "tags", "tags_selection.csv"),
       mirror_backup_path = file.path(backup_dir, "tags", "tags_selection.csv"),
       versioned_backup_dir = file.path(backup_dir, "tags"),
       versioned_backup_prefix = "tags_selection"
     )
-  }  
+  }
   
   return(selection)
 }
@@ -621,9 +663,13 @@ join_table <- function(selected_partProg, partInfo) {
   df_stud <- df %>% 
     #filter(!is.na(`Acad.Prog`)) %>% 
     filter(grepl("^\\d{4}", programme)) %>% 
-    mutate(year=stri_sub(`programme`,0,4), programme=stri_sub(`programme`,6)) %>% 
-    filter(updated == year || is.na(updated)) %>% # Remove accumalive data exempt EXTERNAL data
-    select(-`NSN`) %>% 
+    mutate(year=stri_sub(`programme`,0,4), programme=stri_sub(`programme`,6)) %>%
+    # NOTE: this step used to read `filter(updated == year || is.na(updated))`,
+    # meaning "remove accumulative data exempt EXTERNAL data". `||` only ever looked at
+    # the first element, so in practice every row was kept, and from R 4.3 it is an error.
+    # Kept as a no-op deliberately to preserve the existing output; swap in
+    # `filter(is.na(updated) | updated == year)` to actually apply the per-year filter.
+    select(-`NSN`) %>%
     distinct() # Remove duplicates
   
   ## Change all NAs to EXTERNAL for EXTERNALs
@@ -668,7 +714,10 @@ load_training <- function(data_dir) {
   availSheets <- excel_sheets(file)
   
   # Read in the data
-  training <- map_df(availSheets, ~openxlsx::read.xlsx(file, sheet = ., startRow = 1, detectDates = FALSE, check.names = FALSE)) %>% distinct() %>% select(`Date.Stamp...do.not.copy.into.here`, `ID`, `Tag`, `Tag.1`, `Tag.2`)
+  # Read every sheet as character: sheets share column names but not column types
+  # (e.g. empty trailing columns read as numeric in one sheet, character in another),
+  # which makes bind_rows fail with "Can't combine `..1$X..3` <double> and `..3$X..3` <character>."
+  training <- map_df(availSheets, ~read_xlsx_character(file, sheet = ., startRow = 1)) %>% distinct() %>% select(`Date.Stamp...do.not.copy.into.here`, `ID`, `Tag`, `Tag.1`, `Tag.2`)
   colnames(training) <- c("date", "ID", "Tag", "Tag.1", "Tag.2")
   
   # Filter out NAs rows

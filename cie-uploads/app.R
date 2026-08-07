@@ -15,8 +15,12 @@ library(widyr)
 
 library(DT)
 library(tools)
+source("../traceback_utils.R")
 source("functions.R")
 source("sheet_choices.R")
+
+# Log a full stack trace for anything that fails, instead of a bare message
+install_traceback_handler("cie-uploads")
 data_dir <- Sys.getenv("CIE_DATA_DIR", unset = "../data")
 backup_dir <- Sys.getenv("CIE_BACKUP_DIR", unset = "../backup_data")
 
@@ -347,7 +351,7 @@ server <- function(input, output, session) {
       checkDir2 <- file.path(backup_dir, input$saveYear)
     }
     
-    status <- tryCatch({
+    status <- with_traceback({
       withProgress(message = "Save uploaded files to server", style = "notification", value = 0.1, {
         # save uploaded files to data and backup data directories
         if (file_ext(source_path) == "csv") {
@@ -431,9 +435,12 @@ server <- function(input, output, session) {
 
       # run the data management script functions
       process_write(data_dir, backup_dir)
-    }, error = function(e) {
+    },
+    # with_traceback() has already logged the message and stack trace to stderr
+    handler = function(e, trace) {
       paste0("Saved raw upload at ", source_path, ", but processing failed: ", conditionMessage(e))
-    })
+    },
+    label = "save")
 
     # print output messsage
     output$status <- renderPrint({status})
@@ -441,8 +448,12 @@ server <- function(input, output, session) {
   
   observeEvent(input$reload, {
     # run the data management script functions
-    status <- process_write(data_dir, backup_dir)
-    
+    status <- with_traceback(
+      process_write(data_dir, backup_dir),
+      handler = function(e, trace) paste0("Processing failed: ", conditionMessage(e)),
+      label = "reload"
+    )
+
     # print output messsage
     output$status <- renderPrint({status})
   })
