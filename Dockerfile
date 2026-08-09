@@ -75,6 +75,13 @@ RUN --mount=type=cache,target=/root/.cache/R/renv,sharing=locked \
 # Copy the rest of the application source.
 COPY . ./
 
+# After an upload, the uploads app bumps the mtime of the dashboard sources so Shiny
+# re-sources them and picks up the new CSVs. The apps run as `shiny`, so that user has
+# to be able to write those files - otherwise the signal fails and the dashboards keep
+# serving the previous data indefinitely (nothing else restarts them once
+# app_idle_timeout is 0).
+RUN chown -R shiny:shiny /srv/shiny-server/cie-dashboards
+
 # Persist app data by default and allow host bind mounts.
 VOLUME ["/srv/shiny-server/data", "/srv/shiny-server/backup_data"]
 

@@ -184,7 +184,13 @@ update_csv_with_backups <- function(data_frame, output_path, mirror_backup_path 
     store_versioned_backup_if_unique(temp_path, versioned_backup_dir, versioned_backup_prefix)
   }
 
-  file.copy(temp_path, output_path, overwrite = TRUE)
+  # file.copy() only warns on failure, so an unwritable output directory used to leave
+  # process_write() reporting "Success!" having written nothing at all.
+  if (!isTRUE(file.copy(temp_path, output_path, overwrite = TRUE))) {
+    stop("Failed to write ", output_path, " - check that ", dirname(output_path),
+         " is writable by the app user", call. = FALSE)
+  }
+
   TRUE
 }
 
@@ -232,6 +238,36 @@ deduplicate_backup_dir <- function(backup_dir) {
   directories <- directories[dir.exists(directories)]
 
   unlist(lapply(directories, deduplicate_directory_files), use.names = FALSE)
+}
+
+# Tell the dashboards to pick up newly written CSVs.
+#
+# Shiny re-sources an app's files whenever their modification time changes, so bumping
+# the mtime of the dashboard sources makes the next visitor get freshly loaded data.
+# This was `system("touch ../cie-dashboards/*.R")`, whose failures went nowhere: the
+# apps run as the `shiny` user while those files are owned by root, so every reload
+# signal was silently discarded and the dashboards kept serving stale data. That got
+# worse once app_idle_timeout was set to 0, because the process no longer exits on its
+# own either. Report it now rather than failing silently.
+signal_dashboard_reload <- function(dashboard_dir = "../cie-dashboards") {
+  sources <- dir(dashboard_dir, pattern = "\\.R$", full.names = TRUE)
+  if (length(sources) == 0) {
+    return(FALSE)
+  }
+
+  refreshed <- vapply(sources, function(path) isTRUE(Sys.setFileTime(path, Sys.time())), logical(1))
+
+  if (!all(refreshed)) {
+    cat(
+      "WARNING: could not signal a dashboard reload for ",
+      paste(basename(sources[!refreshed]), collapse = ", "),
+      " - the dashboards will keep serving the previous data. Check that ",
+      normalizePath(dashboard_dir, mustWork = FALSE), " is writable by the app user.\n",
+      sep = "", file = stderr()
+    )
+  }
+
+  all(refreshed)
 }
 
 ## Functions
@@ -329,12 +365,11 @@ process_write <- function(data_dir, backup_dir) {
       )
       incProgress(.1)
       incProgress(.1)
-      # Remove cache on the server. Touching the dashboard sources makes Shiny discard
-      # its R process and reload the CSVs, which costs the next visitor a cold start,
-      # so only do it when this run actually produced different data.
+      # Remove cache on the server. Re-sourcing the dashboards costs the next visitor a
+      # cold start, so only signal it when this run actually produced different data.
       tags_changed <- isTRUE(attr(selection, "tags_csv_changed"))
       if (any(all_changed, training_changed, studio_changed, tags_changed)) {
-        system("touch ../cie-dashboards/*.R")
+        signal_dashboard_reload()
       }
       incProgress(.1)
       Sys.sleep(0.2)
@@ -359,10 +394,17 @@ load_sso <- function(data_dir) {
   c <- sapply(read_excel("../data/base/From Rachel - 2019 CIE Participants.xlsx", sheet = "Student", skip = 1), class)
   c["Birthdate"] <- "integer"
   # Read and clean sheet
-  student <- tibble(updated = basename(dirname(files[1])), filename = files[1]) %>% 
+  #
+  # The unnest() calls below spell out `cols` because the bare form is deprecated, and
+  # repair names with make.unique() because that is what the deprecated form did. Some
+  # Applicant sheets carry two columns literally called "Descr"; make.unique renames
+  # only the second ("Descr", "Descr1"), whereas names_repair = "unique" would rename
+  # both ("Descr...10", "Descr...12") and break the select() that follows. Verified to
+  # reproduce the previous output exactly across every sheet and file.
+  student <- tibble(updated = basename(dirname(files[1])), filename = files[1]) %>%
     mutate(file_contents = map(filename, ~read_xlsx_character(file.path(.), sheet = "Student", startRow = 2))) %>% 
     select(-filename) %>% 
-    unnest() %>% 
+    unnest(cols = c(file_contents), names_repair = ~make.unique(.x, sep = "")) %>% 
     group_by(ID) %>%
     filter(as.numeric(`Admit.Term`)==max(as.numeric(as.character(`Admit.Term`)))) %>% # Only select most recent updates
     ungroup() %>%
@@ -381,7 +423,7 @@ load_sso <- function(data_dir) {
     studentMock <- tibble(updated = basename(dirname(file)), filename = file) %>% 
       mutate(file_contents = map(filename, ~read_xlsx_character(file.path(.), sheet = "Student", startRow = 2))) %>% 
       select(-filename) %>% 
-      unnest() %>% 
+      unnest(cols = c(file_contents), names_repair = ~make.unique(.x, sep = "")) %>% 
       group_by(ID) %>%
       filter(as.numeric(`Admit.Term`)==max(as.numeric(as.character(`Admit.Term`)))) %>% # Only select most recent updates
       ungroup() %>%
@@ -422,7 +464,7 @@ load_sso <- function(data_dir) {
   applicant <- tibble(updated = basename(dirname(isAppl)), filename = isAppl) %>% 
     mutate(file_contents = map(filename, ~read_xlsx_character(file.path(.), sheet = "Applicant", startRow = 2))) %>% 
     select(-filename) %>% 
-    unnest() %>% 
+    unnest(cols = c(file_contents), names_repair = ~make.unique(.x, sep = "")) %>% 
     select(updated, ID, Sex, Age, `Residency.Status`, `Ethnic.Group`, `Ethnicity`, Iwi, Descr, NSN, Descr.1)
   # Change  column names
   colnames(applicant)[length(colnames(applicant))] <- "Descriptio"
@@ -438,7 +480,7 @@ load_sso <- function(data_dir) {
   affil <- tibble(updated = basename(dirname(isAffil)), filename = isAffil) %>% 
     mutate(file_contents = map(filename, ~read_xlsx_character(file.path(.), sheet = "No Affil", startRow = 2))) %>% 
     select(-filename) %>% 
-    unnest() %>% 
+    unnest(cols = c(file_contents), names_repair = ~make.unique(.x, sep = "")) %>% 
     select(updated, ID, Sex, NSN, `Ethnic.grp.description`, `Citizenship.Passport`, `Descr`)
   # Change  column names
   colnames(affil)[5:7] <- c("Ethnicity", "Residency.Status", "Ethnic.Group")
@@ -460,7 +502,7 @@ load_sso <- function(data_dir) {
   citizenship <- tibble(updated = basename(dirname(isCitizenship)), filename = isCitizenship) %>% 
     mutate(file_contents = map(filename, ~read_xlsx_character(file.path(.), sheet = "No citizenship", startRow = 2))) %>% 
     select(-filename) %>% 
-    unnest() %>% 
+    unnest(cols = c(file_contents), names_repair = ~make.unique(.x, sep = "")) %>% 
     select(-`Display.Name`, -`Birthdate`)
   # Set NAs to EXTERNAL
   newCols <- setdiff(colnames(student), colnames(citizenship))
@@ -498,8 +540,8 @@ load_crm <- function(data_dir) {
     select(`UoA ID`, `Tags`, ID) %>% 
     na.omit() # Ignore NAs
   
-  eventCsv <- filesCsv %>% 
-    map(read_csv) %>% 
+  eventCsv <- filesCsv %>%
+    map(~read_csv(.x, show_col_types = FALSE)) %>%
     reduce(rbind) %>% 
     select(`UoA ID`, `Tags`, ID) %>% 
     na.omit() # Ignore NAs
@@ -509,10 +551,17 @@ load_crm <- function(data_dir) {
     rbind(eventExcel) %>% 
     mutate(`UoA ID2` = replace(`UoA ID`, `UoA ID` == "EXTERNAL", paste0(`UoA ID`[`UoA ID` == "EXTERNAL"], `ID`[`UoA ID` == "EXTERNAL"]))) # Change EXTERNAL to EXTERNAL_randomID
   
+  # Some CRM exports carry bytes that are not valid UTF-8 (a mangled ellipsis in
+  # "Unleash Your... Community Event Participant", for instance). strsplit() cannot
+  # split those strings: it warns "input string N is invalid" and returns NA, which
+  # silently discarded *every* tag for that participant. Drop the offending bytes so
+  # the remaining tags in the row still come through.
+  studentEvent$Tags <- iconv(studentEvent$Tags, from = "UTF-8", to = "UTF-8", sub = "")
+
   # Transform to participant programme
-  partProg <- studentEvent$Tags %>% 
-    strsplit(., ",") %>% 
-    setNames(studentEvent$`UoA ID`) %>% 
+  partProg <- studentEvent$Tags %>%
+    strsplit(., ",") %>%
+    setNames(studentEvent$`UoA ID`) %>%
     melt(value.name = "programme") %>% 
     filter(grepl("^\\d{4}", programme))
   
@@ -590,7 +639,7 @@ load_tag <- function(data_dir, backup_dir, save = FALSE) {
   
   # Read data
   if (file_ext(basename(file)) == "csv") {
-    selection <- read_csv(file)
+    selection <- read_csv(file, show_col_types = FALSE)
   } else {
     selection <- read_excel(file)
   }
