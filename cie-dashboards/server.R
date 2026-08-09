@@ -96,6 +96,11 @@ filtered_dashboard_cache <- local({
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
+  # These processes are long-lived (app_idle_timeout 0) and every rendered plot is
+  # written into tempdir(), which R fixes at startup. Re-establish it if something
+  # has cleaned /tmp underneath us, otherwise no plot can render.
+  tempdir(check = TRUE)
+
   # Reactivate dataframes
   filterData <- reactive({
     if (input$tab == "overview") {

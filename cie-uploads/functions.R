@@ -160,6 +160,10 @@ store_versioned_backup_if_unique <- function(source_path, backup_dir, name_prefi
 update_csv_with_backups <- function(data_frame, output_path, mirror_backup_path = NULL, versioned_backup_dir = NULL, versioned_backup_prefix = NULL) {
   ensure_directory(dirname(output_path))
 
+  # Guard against tempdir() having been cleaned away under a long-running app process;
+  # without this the write below fails and processing aborts part way through.
+  tempdir(check = TRUE)
+
   temp_path <- tempfile(fileext = ".csv")
   on.exit(unlink(temp_path), add = TRUE)
   write_csv(data_frame, temp_path)

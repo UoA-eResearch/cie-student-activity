@@ -100,6 +100,14 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram ----
 server <- function(input, output, session) {
+  # R fixes tempdir() when the process starts, and these processes are long-lived
+  # (app_idle_timeout 0). If anything removes /tmp/Rtmp* underneath one, every
+  # tempfile() call fails afterwards — including the directory Shiny creates to
+  # receive an upload, which shows up as "cannot create dir ... No such file or
+  # directory" and a save that silently does nothing. check = TRUE re-establishes
+  # the session temp directory if it has gone missing.
+  tempdir(check = TRUE)
+
   # Update the filers based on selected year
   observe({
     upload_path <- NULL
