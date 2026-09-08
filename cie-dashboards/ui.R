@@ -17,7 +17,10 @@ library(shinyWidgets)
 library(networkD3)
 
 # allData, selection, allStudio, availProg and filter_data() come from global.R,
-# which Shiny sources before this file
+# which Shiny sources before this file. Shiny re-runs ui.R whenever an upload bumps
+# the app file mtimes, so refresh here to rebuild the input choices below from the
+# newly written CSVs rather than from whatever was loaded when the process started.
+refresh_dashboard_data()
 
 filtermap = list(
   "Gender" = "Sex",

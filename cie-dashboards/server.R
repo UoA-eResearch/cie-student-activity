@@ -54,8 +54,17 @@ post_changes = function(df) {
 
 filtered_dashboard_cache <- local({
   cache <- new.env(parent = emptyenv())
+  generation <- NULL
 
   function(name) {
+    # These frames are derived from allData/selection, so they have to be thrown away
+    # when refresh_dashboard_data() reloads the CSVs - otherwise an upload would write
+    # new data that never reaches the dashboards.
+    if (!identical(generation, dashboard_state$generation)) {
+      rm(list = ls(cache, all.names = TRUE), envir = cache)
+      generation <<- dashboard_state$generation
+    }
+
     if (!exists(name, envir = cache, inherits = FALSE)) {
       value <- switch(
         name,
@@ -100,6 +109,9 @@ server <- function(input, output, session) {
   # written into tempdir(), which R fixes at startup. Re-establish it if something
   # has cleaned /tmp underneath us, otherwise no plot can render.
   tempdir(check = TRUE)
+
+  # Pick up CSVs written by an upload since this process started
+  refresh_dashboard_data()
 
   # Reactivate dataframes
   filterData <- reactive({
